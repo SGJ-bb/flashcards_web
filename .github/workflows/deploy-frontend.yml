@@ -29,10 +29,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
+        with:
+          # Automatically enable Pages and set it to build from Actions.
+          # This avoids the "Get Pages site failed" error on first run.
+          enablement: true
 
       - name: Upload frontend artifact
         uses: actions/upload-pages-artifact@v3
