@@ -1,0 +1,4143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="闪卡记忆">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- PWA Manifest (inline via blob for single-file deployment) -->
+<link rel="manifest" id="pwa-manifest">
+<!-- SEO & Social Sharing -->
+<meta name="description" content="基于 Leitner 间隔重复法的闪卡记忆系统，支持多主题、成就系统、学习统计，离线可用。">
+<meta name="keywords" content="闪卡,记忆卡片,Leitner,间隔重复,背单词,flashcards,学习">
+<meta property="og:title" content="FlashCards - 闪卡记忆">
+<meta property="og:description" content="基于 Leitner 间隔重复法的闪卡记忆系统">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<title>FlashCards - 闪卡记忆</title>
+<script>
+// Apply saved theme before render to prevent flash
+(function() {
+  try {
+    var t = localStorage.getItem('fc_theme');
+    if (t) document.documentElement.setAttribute('data-theme', t);
+  } catch(e) {}
+})();
+
+// Generate PWA manifest dynamically (works on any host, any base path)
+(function() {
+  try {
+    var manifest = {
+      name: 'FlashCards 闪卡记忆',
+      short_name: '闪卡',
+      description: 'Leitner 间隔重复闪卡记忆系统',
+      start_url: '.',
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#0d0d1a',
+      theme_color: '#0d0d1a',
+      icons: [{
+        src: 'data:image/svg+xml,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">' +
+          '<rect width="512" height="512" rx="112" fill="#6c5ce7"/>' +
+          '<text x="256" y="340" font-size="280" text-anchor="middle" fill="white">🃏</text>' +
+          '</svg>'
+        ),
+        sizes: '512x512',
+        type: 'image/svg+xml',
+        purpose: 'any maskable'
+      }]
+    };
+    var blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+    document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
+  } catch(e) {}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   CSS Custom Properties — Theme System
+   ═══════════════════════════════════════════════════════ */
+:root {
+  /* Shared tokens (not theme-dependent) */
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+  --nav-height: 64px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --box1: #e74c3c;
+  --box2: #f39c12;
+  --box3: #2ecc71;
+  --box4: #3498db;
+  --box5: #9b59b6;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─── Theme: Midnight (default dark) ─── */
+:root, [data-theme="midnight"] {
+  --bg: #0d0d1a;
+  --surface: #1a1a2e;
+  --surface-hover: #252542;
+  --primary: #6c5ce7;
+  --primary-glow: rgba(108, 92, 231, 0.35);
+  --primary-dim: rgba(108, 92, 231, 0.15);
+  --success: #2ecc71;
+  --error: #e74c3c;
+  --warning: #f39c12;
+  --accent: #00b894;
+  --text: #ffffff;
+  --text-secondary: rgba(255,255,255,0.6);
+  --text-dim: rgba(255,255,255,0.35);
+  --border: rgba(255,255,255,0.08);
+  --border-active: rgba(255,255,255,0.2);
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 30px var(--primary-glow);
+  --nav-bg: rgba(26, 26, 46, 0.92);
+  --auth-bg-1: rgba(108,92,231,0.12);
+  --flame-visibility: 1;
+  --swatch-1: #6c5ce7; --swatch-2: #0d0d1a; --swatch-3: #1a1a2e;
+}
+
+/* ─── Theme: Aurora (dark blue-teal) ─── */
+[data-theme="aurora"] {
+  --bg: #0a0e1a;
+  --surface: #111827;
+  --surface-hover: #1e293b;
+  --primary: #3b82f6;
+  --primary-glow: rgba(59, 130, 246, 0.35);
+  --primary-dim: rgba(59, 130, 246, 0.15);
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --accent: #06b6d4;
+  --text: #f1f5f9;
+  --text-secondary: rgba(241,245,249,0.6);
+  --text-dim: rgba(241,245,249,0.35);
+  --border: rgba(255,255,255,0.07);
+  --border-active: rgba(255,255,255,0.2);
+  --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 30px var(--primary-glow);
+  --nav-bg: rgba(17, 24, 39, 0.92);
+  --auth-bg-1: rgba(59,130,246,0.12);
+  --flame-visibility: 1;
+  --swatch-1: #3b82f6; --swatch-2: #0a0e1a; --swatch-3: #111827;
+}
+
+/* ─── Theme: Forest (dark green) ─── */
+[data-theme="forest"] {
+  --bg: #0a1410;
+  --surface: #122019;
+  --surface-hover: #1c3027;
+  --primary: #10b981;
+  --primary-glow: rgba(16, 185, 129, 0.35);
+  --primary-dim: rgba(16, 185, 129, 0.15);
+  --success: #34d399;
+  --error: #f87171;
+  --warning: #fbbf24;
+  --accent: #84cc16;
+  --text: #ecfdf5;
+  --text-secondary: rgba(236,253,245,0.6);
+  --text-dim: rgba(236,253,245,0.35);
+  --border: rgba(255,255,255,0.07);
+  --border-active: rgba(255,255,255,0.2);
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 30px var(--primary-glow);
+  --nav-bg: rgba(18, 32, 25, 0.92);
+  --auth-bg-1: rgba(16,185,129,0.12);
+  --flame-visibility: 1;
+  --swatch-1: #10b981; --swatch-2: #0a1410; --swatch-3: #122019;
+}
+
+/* ─── Theme: Sunset (dark warm) ─── */
+[data-theme="sunset"] {
+  --bg: #1a0a0f;
+  --surface: #2a1219;
+  --surface-hover: #3a1c25;
+  --primary: #f97316;
+  --primary-glow: rgba(249, 115, 22, 0.35);
+  --primary-dim: rgba(249, 115, 22, 0.15);
+  --success: #84cc16;
+  --error: #ef4444;
+  --warning: #facc15;
+  --accent: #ec4899;
+  --text: #fff7ed;
+  --text-secondary: rgba(255,247,237,0.6);
+  --text-dim: rgba(255,247,237,0.35);
+  --border: rgba(255,255,255,0.07);
+  --border-active: rgba(255,255,255,0.2);
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 30px var(--primary-glow);
+  --nav-bg: rgba(42, 18, 25, 0.92);
+  --auth-bg-1: rgba(249,115,22,0.12);
+  --flame-visibility: 1;
+  --swatch-1: #f97316; --swatch-2: #1a0a0f; --swatch-3: #2a1219;
+}
+
+/* ─── Theme: Light (bright) ─── */
+[data-theme="light"] {
+  --bg: #f5f5fa;
+  --surface: #ffffff;
+  --surface-hover: #eeeef5;
+  --primary: #6c5ce7;
+  --primary-glow: rgba(108, 92, 231, 0.2);
+  --primary-dim: rgba(108, 92, 231, 0.1);
+  --success: #00b894;
+  --error: #e74c3c;
+  --warning: #f39c12;
+  --accent: #00b894;
+  --text: #1a1a2e;
+  --text-secondary: rgba(26,26,46,0.6);
+  --text-dim: rgba(26,26,46,0.35);
+  --border: rgba(0,0,0,0.08);
+  --border-active: rgba(0,0,0,0.2);
+  --shadow: 0 8px 32px rgba(0,0,0,0.08);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-glow: 0 0 30px var(--primary-glow);
+  --nav-bg: rgba(255, 255, 255, 0.92);
+  --auth-bg-1: rgba(108,92,231,0.06);
+  --flame-visibility: 1;
+  --swatch-1: #6c5ce7; --swatch-2: #f5f5fa; --swatch-3: #ffffff;
+}
+
+/* ─── Theme: Rose (dark pink) ─── */
+[data-theme="rose"] {
+  --bg: #14080f;
+  --surface: #20101a;
+  --surface-hover: #2e1828;
+  --primary: #ec4899;
+  --primary-glow: rgba(236, 72, 153, 0.35);
+  --primary-dim: rgba(236, 72, 153, 0.15);
+  --success: #34d399;
+  --error: #f87171;
+  --warning: #fbbf24;
+  --accent: #f472b6;
+  --text: #fdf2f8;
+  --text-secondary: rgba(253,242,248,0.6);
+  --text-dim: rgba(253,242,248,0.35);
+  --border: rgba(255,255,255,0.07);
+  --border-active: rgba(255,255,255,0.2);
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 30px var(--primary-glow);
+  --nav-bg: rgba(32, 16, 26, 0.92);
+  --auth-bg-1: rgba(236,72,153,0.12);
+  --flame-visibility: 1;
+  --swatch-1: #ec4899; --swatch-2: #14080f; --swatch-3: #20101a;
+}
+
+/* Smooth theme transition */
+body, .stat-card, .box-distribution, .hand-card, .review-card-face,
+.bottom-nav, .card-item, .settings-group, .modal-content, .chart-card,
+.heatmap-card, .streak-widget, .goal-widget, .search-bar, .filter-chip,
+.box-select-btn, .review-btn, .toast, .auth-card, .quick-action-btn,
+.modal-form input, .modal-form textarea, .modal-form select,
+.auth-form input, .card-action-btn, .goal-adjust button {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+/* Light theme overrides for elements with hardcoded white text */
+[data-theme="light"] .review-card-face .face-label,
+[data-theme="light"] .review-card-face .face-hint {
+  color: rgba(255,255,255,0.7);
+}
+[data-theme="light"] .hand-card .card-tap {
+  color: rgba(255,255,255,0.6);
+}
+[data-theme="light"] .streak-flame { opacity: 1 !important; }
+
+/* ═══════════════════════════════════════════════════════
+   Reset & Base
+   ═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: inherit; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════════════
+   App Shell
+   ═══════════════════════════════════════════════════════ */
+#app { min-height: 100vh; position: relative; }
+
+/* ═══════════════════════════════════════════════════════
+   Auth Page
+   ═══════════════════════════════════════════════════════ */
+#auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: calc(20px + var(--safe-top));
+  background: radial-gradient(ellipse at top, var(--auth-bg-1) 0%, transparent 60%),
+              var(--bg);
+}
+.auth-container {
+  width: 100%;
+  max-width: 400px;
+  animation: fadeInUp 0.6s ease;
+}
+.auth-logo {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.auth-logo-icon {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 32px var(--primary-glow);
+}
+.auth-logo h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--text), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.auth-logo p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 6px;
+}
+.auth-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.auth-tab {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  position: relative;
+}
+.auth-tab.active { color: var(--primary); }
+.auth-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+.auth-tab:hover { color: var(--text); }
+.auth-form { padding: 28px 24px; }
+.auth-form .form-group { margin-bottom: 18px; }
+.auth-form label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.auth-form input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  transition: var(--transition);
+  outline: none;
+}
+.auth-form input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-dim);
+}
+.auth-form input::placeholder { color: var(--text-dim); }
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--primary), #7c6cf0);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  box-shadow: 0 4px 16px var(--primary-glow);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--primary-glow); }
+.btn-primary:active { transform: translateY(0) scale(0.98); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ═══════════════════════════════════════════════════════
+   Main Layout
+   ═══════════════════════════════════════════════════════ */
+#main-app { display: none; }
+#main-app.active { display: block; }
+.page-content {
+  padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+.page {
+  display: none;
+}
+.page.active { display: block; }
+
+/* ═══════════════════════════════════════════════════════
+   Page Header
+   ═══════════════════════════════════════════════════════ */
+.page-header {
+  padding: 12px 0 20px;
+}
+.page-header h2 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.page-header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Bottom Navigation
+   ═══════════════════════════════════════════════════════ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: calc(var(--nav-height) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 500;
+  transition: var(--transition);
+  position: relative;
+  padding: 8px 0;
+}
+.nav-item svg { width: 24px; height: 24px; transition: var(--transition); }
+.nav-item.active { color: var(--primary); }
+.nav-item.active svg { transform: translateY(-2px); }
+.nav-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 24px; height: 3px;
+  background: var(--primary);
+  border-radius: 0 0 3px 3px;
+  transition: var(--transition-bounce);
+}
+.nav-item.active::before { transform: translateX(-50%) scaleX(1); }
+.nav-item:hover { color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════════════════
+   Dashboard
+   ═══════════════════════════════════════════════════════ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 18px;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--primary);
+  opacity: 0;
+  transition: var(--transition);
+}
+.stat-card:hover { border-color: var(--border-active); transform: translateY(-2px); }
+.stat-card:hover::before { opacity: 1; }
+.stat-card .stat-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.stat-card .stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .emoji { font-size: 18px; }
+
+/* Box Distribution */
+.box-distribution {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 18px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.box-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.box-bar-row:last-child { margin-bottom: 0; }
+.box-label {
+  font-size: 12px;
+  font-weight: 600;
+  width: 48px;
+  flex-shrink: 0;
+}
+.box-bar-track {
+  flex: 1;
+  height: 24px;
+  background: var(--bg);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.box-bar-fill {
+  height: 100%;
+  border-radius: 12px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+  position: relative;
+}
+.box-bar-fill span {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* Card Hand */
+.card-hand-container {
+  margin-bottom: 24px;
+}
+.card-hand-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 2px 16px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.card-hand-scroll::-webkit-scrollbar { height: 3px; }
+.hand-card {
+  min-width: 140px;
+  max-width: 140px;
+  height: 190px;
+  border-radius: 16px;
+  padding: 14px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.hand-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hand-card:hover { transform: translateY(-6px) scale(1.03); }
+.hand-card:active { transform: scale(0.97); }
+.hand-card .box-tag {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: auto;
+}
+.hand-card .card-q {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hand-card .card-tap {
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 8px;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+.quick-action-btn:hover {
+  border-color: var(--border-active);
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+.quick-action-btn .qa-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.quick-action-btn .qa-text { font-size: 14px; font-weight: 600; }
+.quick-action-btn .qa-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ═══════════════════════════════════════════════════════
+   Cards Page
+   ═══════════════════════════════════════════════════════ */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 14px;
+  margin-bottom: 14px;
+  transition: var(--transition);
+}
+.search-bar:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-dim); }
+.search-bar svg { width: 18px; height: 18px; color: var(--text-dim); flex-shrink: 0; }
+.search-bar input {
+  flex: 1;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.search-bar input::placeholder { color: var(--text-dim); }
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.filter-chip {
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.filter-chip:hover { border-color: var(--border-active); }
+.filter-chip.active {
+  background: var(--primary-dim);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.card-list { display: flex; flex-direction: column; gap: 10px; }
+.card-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  transition: var(--transition);
+  cursor: pointer;
+  position: relative;
+}
+.card-item:hover { border-color: var(--border-active); transform: translateY(-1px); }
+.card-item .card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.card-item .card-question {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  flex: 1;
+}
+.card-item .card-answer {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-item .card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.box-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+}
+.category-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--primary-dim);
+  color: var(--primary);
+}
+.card-item .card-actions {
+  position: absolute;
+  top: 12px; right: 12px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: var(--transition-fast);
+}
+.card-item:hover .card-actions { opacity: 1; }
+.card-action-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  background: var(--bg);
+  transition: var(--transition-fast);
+}
+.card-action-btn:hover { background: var(--surface-hover); }
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 20px);
+  right: 20px;
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--primary), #7c6cf0);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  color: white;
+  box-shadow: 0 6px 24px var(--primary-glow);
+  transition: var(--transition);
+  z-index: 50;
+}
+.fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 32px var(--primary-glow); }
+.fab:active { transform: scale(0.95); }
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+}
+.empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+.empty-state h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.empty-state p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Review Page
+   ═══════════════════════════════════════════════════════ */
+.box-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.box-select-btn {
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  white-space: nowrap;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.box-select-btn:hover { border-color: var(--border-active); transform: translateY(-1px); }
+.box-select-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-dim);
+  box-shadow: 0 0 16px var(--primary-glow);
+}
+
+/* Review Card Flip */
+.review-area {
+  perspective: 1200px;
+  margin-bottom: 24px;
+}
+.review-card-wrapper {
+  width: 100%;
+  height: 320px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.review-card-wrapper.flipped { transform: rotateY(180deg); }
+.review-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+}
+.review-card-face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+.review-card-back { transform: rotateY(180deg); }
+.review-card-face .face-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 16px;
+}
+.review-card-face .face-text {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.review-card-face .face-hint {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 20px;
+}
+
+/* Review Buttons */
+.review-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.review-btn {
+  flex: 1;
+  padding: 16px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+.review-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+.btn-correct {
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+.btn-correct:hover:not(:disabled) { background: rgba(46, 204, 113, 0.25); transform: translateY(-2px); }
+.btn-correct:active:not(:disabled) { transform: scale(0.97); }
+.btn-incorrect {
+  background: rgba(231, 76, 60, 0.15);
+  color: var(--error);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+.btn-incorrect:hover:not(:disabled) { background: rgba(231, 76, 60, 0.25); transform: translateY(-2px); }
+.btn-incorrect:active:not(:disabled) { transform: scale(0.97); }
+
+/* Feedback Bar */
+.feedback-bar {
+  text-align: center;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  animation: fadeInUp 0.4s ease;
+}
+.feedback-bar.correct {
+  background: rgba(46, 204, 113, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+}
+.feedback-bar.incorrect {
+  background: rgba(231, 76, 60, 0.12);
+  color: var(--error);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+/* Review Progress */
+.review-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.progress-track {
+  flex: 1;
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.progress-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Session Complete */
+.session-complete {
+  text-align: center;
+  padding: 40px 20px;
+  animation: fadeInUp 0.5s ease;
+}
+.session-complete .complete-icon { font-size: 64px; margin-bottom: 20px; }
+.session-complete h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+.session-complete p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.session-complete .session-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 28px;
+}
+.session-complete .ss-item { text-align: center; }
+.session-complete .ss-value { font-size: 28px; font-weight: 800; }
+.session-complete .ss-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ═══════════════════════════════════════════════════════
+   Stats Page
+   ═══════════════════════════════════════════════════════ */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.chart-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 160px;
+  padding-top: 10px;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+.bar-value {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.bar-fill {
+  width: 100%;
+  max-width: 28px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 2px;
+}
+.bar-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.accuracy-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 120px;
+  padding-top: 10px;
+}
+.acc-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+.acc-fill {
+  width: 100%;
+  max-width: 28px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 2px;
+}
+
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.records-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.records-table td {
+  font-size: 13px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.records-table tr:last-child td { border-bottom: none; }
+
+/* ═══════════════════════════════════════════════════════
+   Settings Page
+   ═══════════════════════════════════════════════════════ */
+.settings-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+.settings-item:last-child { border-bottom: none; }
+.settings-item:hover { background: var(--surface-hover); }
+.settings-item .si-left { display: flex; align-items: center; gap: 12px; }
+.settings-item .si-icon { font-size: 20px; width: 24px; text-align: center; }
+.settings-item .si-label { font-size: 14px; font-weight: 500; }
+.settings-item .si-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.settings-item .si-right { color: var(--text-dim); font-size: 14px; }
+.settings-item.danger .si-label { color: var(--error); }
+
+/* ═══════════════════════════════════════════════════════
+   Modal
+   ═══════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.active { display: flex; }
+.modal-content {
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-handle {
+  width: 36px; height: 4px;
+  background: var(--border-active);
+  border-radius: 2px;
+  margin: 0 auto 18px;
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.modal-form .form-group { margin-bottom: 16px; }
+.modal-form label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.modal-form input,
+.modal-form textarea,
+.modal-form select {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: var(--transition);
+}
+.modal-form input:focus,
+.modal-form textarea:focus,
+.modal-form select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-dim);
+}
+.modal-form textarea { resize: vertical; min-height: 80px; }
+.modal-form select { cursor: pointer; }
+.modal-form select option { background: var(--surface); }
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.btn-modal {
+  flex: 1;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+.btn-modal.primary {
+  background: linear-gradient(135deg, var(--primary), #7c6cf0);
+  color: white;
+}
+.btn-modal.primary:hover { transform: translateY(-1px); }
+.btn-modal.secondary {
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.btn-modal.secondary:hover { border-color: var(--border-active); }
+
+/* ═══════════════════════════════════════════════════════
+   Toast
+   ═══════════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 90%;
+  max-width: 380px;
+  pointer-events: none;
+}
+.toast {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(16px);
+  animation: toastIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: auto;
+  border: 1px solid;
+}
+.toast.success { background: rgba(46,204,113,0.15); color: var(--success); border-color: rgba(46,204,113,0.25); }
+.toast.error { background: rgba(231,76,60,0.15); color: var(--error); border-color: rgba(231,76,60,0.25); }
+.toast.info { background: rgba(108,92,231,0.15); color: var(--primary); border-color: rgba(108,92,231,0.25); }
+.toast.removing { animation: toastOut 0.3s ease forwards; }
+
+/* ═══════════════════════════════════════════════════════
+   Loading / Shimmer
+   ═══════════════════════════════════════════════════════ */
+.shimmer {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-xs);
+}
+.shimmer-line { height: 16px; margin-bottom: 10px; }
+.shimmer-line.short { width: 60%; }
+.shimmer-card { height: 80px; margin-bottom: 10px; border-radius: var(--radius); }
+.shimmer-block { height: 120px; margin-bottom: 12px; border-radius: var(--radius); }
+
+/* ═══════════════════════════════════════════════════════
+   Animations
+   ═══════════════════════════════════════════════════════ */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateY(-20px) scale(0.9); }
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes cardReveal {
+  0% { transform: rotateY(0deg) scale(0.95); opacity: 0.5; }
+  100% { transform: rotateY(180deg) scale(1); opacity: 1; }
+}
+@keyframes flamePulse {
+  0%, 100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+  50% { transform: scaleY(1.15) scaleX(0.92); filter: brightness(1.3); }
+}
+@keyframes flameFlicker {
+  0%, 100% { opacity: 1; transform: translateY(0) scale(1); }
+  25% { opacity: 0.8; transform: translateY(-2px) scale(1.05); }
+  50% { opacity: 1; transform: translateY(-1px) scale(0.98); }
+  75% { opacity: 0.9; transform: translateY(-3px) scale(1.02); }
+}
+@keyframes staggerIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes badgeUnlock {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  50% { transform: scale(1.3) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes particleBurst {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--px), var(--py)) scale(0); opacity: 0; }
+}
+@keyframes streakGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(243,156,18,0.3); }
+  50% { box-shadow: 0 0 20px rgba(243,156,18,0.6), 0 0 40px rgba(243,156,18,0.2); }
+}
+@keyframes heatCellIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Reduced Motion
+   ═══════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .review-card-wrapper { transition: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Streak Flame Widget
+   ═══════════════════════════════════════════════════════ */
+.streak-widget {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.streak-widget.active { animation: streakGlow 2s infinite; }
+.streak-flame {
+  position: relative;
+  width: 48px;
+  height: 60px;
+  flex-shrink: 0;
+}
+.streak-flame-body {
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 32px; height: 44px;
+  background: linear-gradient(0deg, #e74c3c 0%, #f39c12 40%, #f1c40f 70%, transparent 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: flamePulse 0.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(243,156,18,0.5));
+}
+.streak-flame-inner {
+  position: absolute;
+  bottom: 2px; left: 50%;
+  transform: translateX(-50%);
+  width: 16px; height: 28px;
+  background: linear-gradient(0deg, #f39c12 0%, #f1c40f 50%, transparent 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: flameFlicker 0.6s ease-in-out infinite;
+}
+.streak-flame-spark {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: #f1c40f;
+  border-radius: 50%;
+  animation: flameFlicker 0.4s ease-in-out infinite;
+}
+.streak-info { flex: 1; }
+.streak-count {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  background: linear-gradient(135deg, #f39c12, #e74c3c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.streak-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-weight: 500;
+}
+.streak-sublabel {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Daily Goal Progress Ring
+   ═══════════════════════════════════════════════════════ */
+.goal-widget {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.goal-ring-container {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+.goal-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.goal-ring-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 6;
+}
+.goal-ring-fill {
+  fill: none;
+  stroke: url(#goalGradient);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.goal-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+.goal-info { flex: 1; }
+.goal-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.goal-subtitle { font-size: 12px; color: var(--text-secondary); }
+.goal-adjust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.goal-adjust button {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition-fast);
+}
+.goal-adjust button:hover { border-color: var(--primary); color: var(--primary); }
+.goal-adjust .goal-target {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Achievement Badges
+   ═══════════════════════════════════════════════════════ */
+.achievements-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  margin-bottom: 24px;
+}
+.achievements-row::-webkit-scrollbar { height: 3px; }
+.badge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 68px;
+  flex-shrink: 0;
+}
+.badge-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  transition: var(--transition);
+  position: relative;
+}
+.badge-icon.unlocked {
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.badge-icon.locked {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.badge-icon.just-unlocked {
+  animation: badgeUnlock 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.badge-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+.badge-item.locked .badge-label { color: var(--text-dim); }
+
+/* ═══════════════════════════════════════════════════════
+   Particle Burst Effect
+   ═══════════════════════════════════════════════════════ */
+.particle-container {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999;
+}
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particleBurst 0.7s cubic-bezier(0, 0.5, 0.5, 1) forwards;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Heatmap Calendar
+   ═══════════════════════════════════════════════════════ */
+.heatmap-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.heatmap-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--bg);
+  transition: var(--transition-fast);
+  position: relative;
+}
+.heatmap-cell.l1 { background: rgba(108,92,231,0.15); }
+.heatmap-cell.l2 { background: rgba(108,92,231,0.35); }
+.heatmap-cell.l3 { background: rgba(108,92,231,0.55); }
+.heatmap-cell.l4 { background: rgba(108,92,231,0.8); }
+.heatmap-cell.today { outline: 2px solid var(--primary); outline-offset: 1px; }
+.heatmap-cell[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+  z-index: 10;
+  color: var(--text);
+}
+.heatmap-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.heatmap-legend .heatmap-cell { width: 12px; height: 12px; aspect-ratio: auto; }
+
+/* ═══════════════════════════════════════════════════════
+   Staggered List Animation
+   ═══════════════════════════════════════════════════════ */
+.stagger-item {
+  animation: staggerIn 0.35s ease both;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Review Enhanced Feedback
+   ═══════════════════════════════════════════════════════ */
+.review-btn .btn-icon {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.review-btn:active:not(:disabled) .btn-icon {
+  transform: scale(1.3);
+}
+.review-streak-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(243,156,18,0.1);
+  border: 1px solid rgba(243,156,18,0.2);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warning);
+  margin-bottom: 12px;
+  animation: fadeInUp 0.3s ease;
+}
+.combo-text {
+  font-size: 12px;
+  color: var(--warning);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Session Complete Enhanced
+   ═══════════════════════════════════════════════════════ */
+.session-complete .xp-bar {
+  margin-top: 16px;
+  background: var(--bg);
+  border-radius: 8px;
+  height: 8px;
+  overflow: hidden;
+  width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.session-complete .xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 8px;
+  transition: width 1s ease;
+}
+.session-complete .xp-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Nav Transition Enhancement
+   ═══════════════════════════════════════════════════════ */
+.page {
+  animation: pageIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.nav-item {
+  transition: color 0.2s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Count Up Animation
+   ═══════════════════════════════════════════════════════ */
+.stat-value-animated {
+  animation: countUp 0.5s ease both;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Theme Picker
+   ═══════════════════════════════════════════════════════ */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 16px 18px;
+}
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+.theme-card:hover { border-color: var(--border-active); transform: translateY(-2px); }
+.theme-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-dim);
+}
+.theme-card.active::after {
+  content: '✓';
+  position: absolute;
+  top: 6px; right: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary);
+}
+.theme-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.1);
+}
+.theme-swatch::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 50%; height: 100%;
+  background: var(--swatch-2);
+}
+.theme-swatch::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 50%; height: 100%;
+  background: var(--swatch-3);
+}
+.theme-swatch-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--swatch-1);
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.theme-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.theme-card.active .theme-name { color: var(--primary); }
+
+/* Floating Theme Toggle Button */
+.theme-toggle-fab {
+  position: fixed;
+  top: calc(12px + var(--safe-top));
+  right: 16px;
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  z-index: 90;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.theme-toggle-fab:hover {
+  transform: rotate(30deg) scale(1.1);
+  border-color: var(--primary);
+}
+.theme-toggle-fab:active { transform: scale(0.92); }
+.theme-toggle-fab svg {
+  width: 20px; height: 20px;
+  transition: var(--transition);
+}
+
+/* Theme transition flash overlay */
+.theme-flash {
+  position: fixed;
+  inset: 0;
+  background: var(--primary);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
+}
+.theme-flash.active {
+  animation: themeFlash 0.5s ease;
+}
+@keyframes themeFlash {
+  0% { opacity: 0; }
+  30% { opacity: 0.15; }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Demo Mode & Connection Status
+   ═══════════════════════════════════════════════════════ */
+.demo-banner {
+  background: linear-gradient(135deg, rgba(243,156,18,0.15), rgba(231,76,60,0.1));
+  border: 1px solid rgba(243,156,18,0.3);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.demo-banner-icon { font-size: 20px; flex-shrink: 0; }
+.demo-banner-text { flex: 1; color: var(--text-secondary); line-height: 1.4; }
+.demo-banner-text strong { color: var(--warning); }
+.demo-banner button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--warning);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.demo-banner button:hover { opacity: 0.85; }
+
+.conn-status {
+  position: fixed;
+  top: calc(12px + var(--safe-top));
+  left: 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+.conn-status.visible { opacity: 1; transform: translateY(0); }
+.conn-status.online { color: var(--success); }
+.conn-status.offline { color: var(--error); }
+.conn-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+.conn-status.demo { color: var(--warning); }
+
+/* Auth page demo mode entry */
+.demo-entry {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.demo-entry-btn {
+  background: transparent;
+  border: 1px dashed var(--border-active);
+  color: var(--text-secondary);
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+}
+.demo-entry-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  border-style: solid;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Mobile Optimization
+   ═══════════════════════════════════════════════════════ */
+.page-content {
+  padding-top: calc(16px + var(--safe-top));
+}
+
+/* Larger touch targets on mobile */
+@media (max-width: 479px) {
+  .nav-item { padding: 10px 0; }
+  .nav-item svg { width: 22px; height: 22px; }
+  .nav-item span { font-size: 10px; }
+  .filter-chip { padding: 8px 14px; font-size: 12px; }
+  .box-select-btn { padding: 12px 16px; font-size: 13px; }
+  .review-btn { padding: 14px; font-size: 14px; }
+  .fab { width: 52px; height: 52px; font-size: 24px; }
+  .card-action-btn { width: 34px; height: 34px; }
+  .settings-item { padding: 18px 16px; }
+  .page-header h2 { font-size: 24px; }
+  .stat-card { padding: 14px; }
+  .stat-card .stat-value { font-size: 24px; }
+  .streak-widget { padding: 14px; gap: 12px; }
+  .streak-flame { width: 40px; height: 52px; }
+  .streak-count { font-size: 28px; }
+  .goal-widget { padding: 14px; gap: 14px; }
+  .goal-ring-container { width: 64px; height: 64px; }
+  .hand-card { min-width: 130px; max-width: 130px; height: 175px; padding: 12px; }
+  .review-card-wrapper { height: 300px; }
+  .review-card-face { padding: 24px 20px; }
+  .review-card-face .face-text { font-size: 18px; }
+  .theme-toggle-fab { width: 38px; height: 38px; top: calc(10px + var(--safe-top)); right: 12px; }
+  .theme-picker { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .theme-card { padding: 12px 6px; }
+  .theme-swatch { width: 38px; height: 38px; }
+}
+
+/* Very small screens */
+@media (max-width: 359px) {
+  .stats-grid { gap: 8px; }
+  .stat-card { padding: 12px; }
+  .stat-card .stat-value { font-size: 20px; }
+  .stat-card .stat-icon { width: 32px; height: 32px; font-size: 16px; }
+  .quick-actions { gap: 8px; }
+  .quick-action-btn { padding: 12px; gap: 10px; }
+  .quick-action-btn .qa-icon { width: 36px; height: 36px; font-size: 18px; }
+  .quick-action-btn .qa-text { font-size: 13px; }
+  .review-actions { gap: 8px; }
+  .bar-chart, .accuracy-chart { gap: 4px; }
+  .bar-fill, .acc-fill { max-width: 20px; }
+  .theme-picker { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Landscape phone adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .review-card-wrapper { height: 220px; }
+  .review-card-face { padding: 16px; }
+  .review-card-face .face-text { font-size: 16px; }
+  .page-header { padding: 8px 0 14px; }
+  .page-header h2 { font-size: 20px; }
+  .streak-widget, .goal-widget { margin-bottom: 14px; padding: 12px; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════════════════ */
+@media (min-width: 480px) {
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-card .stat-value { font-size: 24px; }
+}
+@media (min-width: 768px) {
+  .page-content { padding: 24px 24px calc(var(--nav-height) + 24px); }
+  .modal-content { border-radius: var(--radius); margin-bottom: 40px; }
+  .modal-overlay { align-items: center; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- ═══ Auth Page ═══ -->
+  <div id="auth-page">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">🃏</div>
+        <h1>FlashCards</h1>
+        <p>Leitner 闪卡记忆系统</p>
+      </div>
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">登录</button>
+          <button class="auth-tab" data-tab="register">注册</button>
+        </div>
+        <div class="auth-form" id="login-form">
+          <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="login-username" placeholder="请输入用户名" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password">
+          </div>
+          <button class="btn-primary" id="login-btn">登录</button>
+        </div>
+        <div class="auth-form" id="register-form" style="display:none">
+          <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="register-username" placeholder="请输入用户名" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label>邮箱 (可选)</label>
+            <input type="email" id="register-email" placeholder="请输入邮箱" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="register-password" placeholder="至少6位密码" autocomplete="new-password">
+          </div>
+          <button class="btn-primary" id="register-btn">注册</button>
+        </div>
+        <div class="demo-entry">
+          <button class="demo-entry-btn" id="demo-btn">🎮 体验演示模式（无需后端）</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Main App ═══ -->
+  <div id="main-app">
+    <!-- Connection Status Indicator -->
+    <div class="conn-status" id="conn-status">
+      <span class="conn-status-dot"></span>
+      <span id="conn-status-text">连接中</span>
+    </div>
+    <div class="page-content">
+      <!-- Dashboard -->
+      <div class="page" id="page-dashboard">
+        <div class="page-header">
+          <h2>仪表盘</h2>
+          <p id="dashboard-greeting">加油学习！</p>
+        </div>
+        <!-- Demo Mode Banner (hidden by default) -->
+        <div class="demo-banner" id="demo-banner" style="display:none">
+          <span class="demo-banner-icon">🎮</span>
+          <span class="demo-banner-text"><strong>演示模式</strong> · 当前使用示例数据，连接后端后可使用完整功能</span>
+          <button onclick="App.exitDemo()">连接后端</button>
+        </div>
+        <!-- Streak Flame Widget -->
+        <div class="streak-widget" id="streak-widget">
+          <div class="streak-flame" id="streak-flame">
+            <div class="streak-flame-body"></div>
+            <div class="streak-flame-inner"></div>
+            <div class="streak-flame-spark" style="top:2px;left:8px;animation-delay:-0.1s"></div>
+            <div class="streak-flame-spark" style="top:6px;right:6px;animation-delay:-0.3s"></div>
+          </div>
+          <div class="streak-info">
+            <div class="streak-count" id="streak-count">0</div>
+            <div class="streak-label">连续学习天数</div>
+            <div class="streak-sublabel" id="streak-sublabel">今天还没复习</div>
+          </div>
+        </div>
+        <!-- Daily Goal Progress Ring -->
+        <div class="goal-widget" id="goal-widget">
+          <div class="goal-ring-container">
+            <svg class="goal-ring-svg" viewBox="0 0 72 72">
+              <defs>
+                <linearGradient id="goalGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#6c5ce7"/>
+                  <stop offset="100%" stop-color="#00b894"/>
+                </linearGradient>
+              </defs>
+              <circle class="goal-ring-bg" cx="36" cy="36" r="30"/>
+              <circle class="goal-ring-fill" id="goal-ring-fill" cx="36" cy="36" r="30"
+                stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            </svg>
+            <div class="goal-ring-text" id="goal-ring-text">0%</div>
+          </div>
+          <div class="goal-info">
+            <div class="goal-title">每日目标</div>
+            <div class="goal-subtitle" id="goal-subtitle">已复习 0 / 20 张</div>
+            <div class="goal-adjust">
+              <button onclick="App.sticky.adjustGoal(-5)">−</button>
+              <span class="goal-target" id="goal-target">20</span>
+              <button onclick="App.sticky.adjustGoal(5)">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <!-- Achievement Badges -->
+        <div class="section-title"><span class="emoji">🏆</span> 学习成就</div>
+        <div class="achievements-row" id="achievements-row"></div>
+        <div class="section-title"><span class="emoji">📦</span> 盒子分布</div>
+        <div class="box-distribution" id="box-distribution"></div>
+        <div class="section-title"><span class="emoji">🃏</span> 我的卡片</div>
+        <div class="card-hand-container" id="card-hand-container"></div>
+        <div class="section-title"><span class="emoji">⚡</span> 快捷操作</div>
+        <div class="quick-actions">
+          <button class="quick-action-btn" onclick="App.router.navigate('review')">
+            <div class="qa-icon" style="background:rgba(46,204,113,0.15);color:var(--success)">📖</div>
+            <div><div class="qa-text">开始复习</div><div class="qa-sub">Leitner 系统</div></div>
+          </button>
+          <button class="quick-action-btn" onclick="App.cards.showAddModal()">
+            <div class="qa-icon" style="background:rgba(108,92,231,0.15);color:var(--primary)">➕</div>
+            <div><div class="qa-text">添加卡片</div><div class="qa-sub">新建闪卡</div></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cards -->
+      <div class="page" id="page-cards">
+        <div class="page-header">
+          <h2>卡片</h2>
+          <p id="cards-count">管理你的闪卡</p>
+        </div>
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="card-search" placeholder="搜索卡片...">
+        </div>
+        <div class="filter-row" id="card-filters"></div>
+        <div class="card-list" id="card-list"></div>
+      </div>
+
+      <!-- Review -->
+      <div class="page" id="page-review">
+        <div class="page-header">
+          <h2>复习</h2>
+          <p>选择盒子开始复习</p>
+        </div>
+        <div class="box-selector" id="box-selector"></div>
+        <div class="review-progress" id="review-progress" style="display:none">
+          <div class="progress-track"><div class="progress-fill" id="review-progress-fill"></div></div>
+          <div class="progress-text" id="review-progress-text">0/0</div>
+        </div>
+        <div id="review-content"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="page" id="page-stats">
+        <div class="page-header">
+          <h2>统计</h2>
+          <p>学习数据一览</p>
+        </div>
+        <!-- Heatmap -->
+        <div class="heatmap-card" id="heatmap-card">
+          <h3>🗓️ 学习热力图</h3>
+          <div class="heatmap-grid" id="heatmap-grid"></div>
+          <div class="heatmap-labels">
+            <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+          </div>
+          <div class="heatmap-legend">
+            <span style="margin-right:4px">少</span>
+            <div class="heatmap-cell"></div>
+            <div class="heatmap-cell l1"></div>
+            <div class="heatmap-cell l2"></div>
+            <div class="heatmap-cell l3"></div>
+            <div class="heatmap-cell l4"></div>
+            <span style="margin-left:4px">多</span>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>📊 每日复习量</h3>
+          <div class="bar-chart" id="daily-chart"></div>
+        </div>
+        <div class="chart-card">
+          <h3>🎯 正确率趋势</h3>
+          <div class="accuracy-chart" id="accuracy-chart"></div>
+        </div>
+        <div class="chart-card">
+          <h3>📋 最近学习记录</h3>
+          <div id="records-container" style="overflow-x:auto"></div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="page" id="page-settings">
+        <div class="page-header">
+          <h2>设置</h2>
+          <p id="settings-user">应用设置</p>
+        </div>
+        <!-- Theme Picker -->
+        <div class="section-title"><span class="emoji">🎨</span> 主题外观</div>
+        <div class="settings-group" style="overflow:hidden">
+          <div class="theme-picker" id="theme-picker"></div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-item" id="btn-edit-api">
+            <div class="si-left"><span class="si-icon">🌐</span><div><div class="si-label">API 地址</div><div class="si-sub" id="settings-api-url">localhost:8000</div></div></div>
+            <div class="si-right">✏️</div>
+          </div>
+          <div class="settings-item" id="btn-reset-api">
+            <div class="si-left"><span class="si-icon">🔄</span><div><div class="si-label">重置 API 地址</div><div class="si-sub">恢复为默认 localhost:8000</div></div></div>
+            <div class="si-right">›</div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-item" id="btn-import">
+            <div class="si-left"><span class="si-icon">📥</span><div><div class="si-label">导入 CSV</div><div class="si-sub">批量导入闪卡</div></div></div>
+            <div class="si-right">›</div>
+          </div>
+          <div class="settings-item" id="btn-export">
+            <div class="si-left"><span class="si-icon">📤</span><div><div class="si-label">导出 CSV</div><div class="si-sub">下载所有闪卡</div></div></div>
+            <div class="si-right">›</div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-item danger" id="btn-logout">
+            <div class="si-left"><span class="si-icon">🚪</span><div><div class="si-label">退出登录</div></div></div>
+            <div class="si-right">›</div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-item">
+            <div class="si-left"><span class="si-icon">💡</span><div><div class="si-label">关于</div><div class="si-sub">FlashCards v2.0 — Leitner 闪卡记忆系统</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" id="fab-add" style="display:none" onclick="App.cards.showAddModal()">+</button>
+
+    <!-- Floating Theme Toggle -->
+    <button class="theme-toggle-fab" id="theme-toggle-fab" onclick="App.theme.cycle()" title="切换主题">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+    </button>
+
+    <!-- Theme Flash Overlay -->
+    <div class="theme-flash" id="theme-flash"></div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-route="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>仪表盘</span>
+      </button>
+      <button class="nav-item" data-route="cards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></svg>
+        <span>卡片</span>
+      </button>
+      <button class="nav-item" data-route="review">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>复习</span>
+      </button>
+      <button class="nav-item" data-route="stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+        <span>统计</span>
+      </button>
+      <button class="nav-item" data-route="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>设置</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Hidden file input for CSV import -->
+  <input type="file" id="csv-file-input" accept=".csv" style="display:none">
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   API Configuration — dynamic base URL with env detection
+   ═══════════════════════════════════════════════════════ */
+const Config = {
+  _defaultBase: 'http://localhost:8000/api',
+
+  // Detect deployment environment
+  get env() {
+    const h = location.hostname;
+    if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0') return 'local';
+    if (h.endsWith('.github.io')) return 'github_pages';
+    if (h.endsWith('.vercel.app')) return 'vercel';
+    if (h.endsWith('.netlify.app')) return 'netlify';
+    if (h.endsWith('.cloudflareaccess.com') || h.endsWith('.pages.dev')) return 'cloudflare';
+    if (h.endsWith('.natfrp.com') || h.endsWith('.frp.com')) return 'frp';
+    return 'custom';
+  },
+
+  get API_BASE() {
+    // Priority: URL param ?api= > localStorage > auto-detect > default
+    const urlParam = new URLSearchParams(location.search).get('api');
+    if (urlParam) {
+      const base = urlParam.endsWith('/api') ? urlParam : urlParam.replace(/\/$/, '') + '/api';
+      localStorage.setItem('fc_api_base', base);
+      return base;
+    }
+    const saved = localStorage.getItem('fc_api_base');
+    if (saved) return saved;
+
+    // Auto-detect based on environment
+    const env = this.env;
+    if (env === 'local') {
+      // Local dev: assume backend on same host port 8000
+      return `http://${location.hostname}:8000/api`;
+    }
+    if (env === 'frp') {
+      // FRP tunnel: backend likely on same host (the tunnel target)
+      return `${location.origin}/api`;
+    }
+    // For GitHub Pages / Vercel / Netlify / Cloudflare:
+    // Backend is NOT on the same host. User must configure it.
+    // Return null to signal "demo mode" until configured.
+    const configured = localStorage.getItem('fc_api_configured');
+    if (!configured) return null; // triggers demo mode
+    return this._defaultBase;
+  },
+
+  setAPIBase(url) {
+    url = url.trim().replace(/\/+$/, '');
+    if (!url.endsWith('/api')) url += '/api';
+    localStorage.setItem('fc_api_base', url);
+    localStorage.setItem('fc_api_configured', '1');
+    return url;
+  },
+
+  resetAPIBase() {
+    localStorage.removeItem('fc_api_base');
+    localStorage.removeItem('fc_api_configured');
+  },
+
+  get isConfigured() {
+    return this.API_BASE !== null;
+  }
+};
+
+const BOX_COLORS = ['#e74c3c','#f39c12','#2ecc71','#3498db','#9b59b6'];
+
+/* ═══════════════════════════════════════════════════════
+   Utility Helpers
+   ═══════════════════════════════════════════════════════ */
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+function boxColor(n) { return BOX_COLORS[(n - 1) % BOX_COLORS.length]; }
+function formatDate(d) {
+  const dt = new Date(d);
+  return `${dt.getMonth()+1}/${dt.getDate()}`;
+}
+function formatDateFull(d) {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Toast System
+   ═══════════════════════════════════════════════════════ */
+const Toast = {
+  show(msg, type='info', duration=3000) {
+    const container = $('#toast-container');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.classList.add('removing');
+      setTimeout(() => el.remove(), 300);
+    }, duration);
+  },
+  success(msg) { this.show(msg, 'success'); },
+  error(msg) { this.show(msg, 'error', 4000); },
+  info(msg) { this.show(msg, 'info'); }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Modal System
+   ═══════════════════════════════════════════════════════ */
+const Modal = {
+  open(html) {
+    $('#modal-content').innerHTML = html;
+    $('#modal-overlay').classList.add('active');
+  },
+  close() {
+    $('#modal-overlay').classList.remove('active');
+  }
+};
+$('#modal-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) Modal.close();
+});
+
+/* ═══════════════════════════════════════════════════════
+   Theme Module — Multi-theme system
+   ═══════════════════════════════════════════════════════ */
+const Theme = {
+  _themes: [
+    { id: 'midnight', name: '午夜紫', icon: '🌙' },
+    { id: 'aurora',   name: '极光蓝', icon: '🌊' },
+    { id: 'forest',   name: '森林绿', icon: '🌲' },
+    { id: 'sunset',   name: '日落橙', icon: '🌅' },
+    { id: 'rose',     name: '玫瑰粉', icon: '🌸' },
+    { id: 'light',    name: '日光白', icon: '☀️' },
+  ],
+  _current: 'midnight',
+
+  init() {
+    const saved = localStorage.getItem('fc_theme');
+    if (saved && this._themes.find(t => t.id === saved)) {
+      this._current = saved;
+    }
+    this.apply(this._current, false);
+    this.renderPicker();
+  },
+
+  apply(themeId, animate = true) {
+    const theme = this._themes.find(t => t.id === themeId);
+    if (!theme) return;
+    this._current = themeId;
+    document.documentElement.setAttribute('data-theme', themeId);
+    localStorage.setItem('fc_theme', themeId);
+
+    // Update meta theme-color for mobile browser chrome
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (!metaTheme) {
+      const m = document.createElement('meta');
+      m.name = 'theme-color';
+      document.head.appendChild(m);
+    }
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    const metaEl = document.querySelector('meta[name="theme-color"]');
+    if (metaEl && bg) metaEl.setAttribute('content', bg);
+
+    // Flash animation
+    if (animate) {
+      const flash = $('#theme-flash');
+      if (flash) {
+        flash.classList.remove('active');
+        void flash.offsetWidth; // force reflow
+        flash.classList.add('active');
+      }
+    }
+
+    // Update picker active state
+    this._updatePickerActive();
+  },
+
+  cycle() {
+    const idx = this._themes.findIndex(t => t.id === this._current);
+    const next = this._themes[(idx + 1) % this._themes.length];
+    this.apply(next.id);
+    Toast.info(`${next.icon} ${next.name}`);
+  },
+
+  renderPicker() {
+    const picker = $('#theme-picker');
+    if (!picker) return;
+    picker.innerHTML = this._themes.map(t => `
+      <div class="theme-card ${t.id === this._current ? 'active' : ''}" data-theme-id="${t.id}" onclick="App.theme.set('${t.id}')">
+        <div class="theme-swatch" style="--swatch-1:${this._getSwatch(t.id,1)};--swatch-2:${this._getSwatch(t.id,2)};--swatch-3:${this._getSwatch(t.id,3)}">
+          <div class="theme-swatch-dot" style="background:${this._getSwatch(t.id,1)}"></div>
+        </div>
+        <div class="theme-name">${t.icon} ${t.name}</div>
+      </div>
+    `).join('');
+  },
+
+  _updatePickerActive() {
+    $$('.theme-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.themeId === this._current);
+    });
+  },
+
+  _getSwatch(themeId, n) {
+    const swatches = {
+      midnight: ['#6c5ce7', '#0d0d1a', '#1a1a2e'],
+      aurora:   ['#3b82f6', '#0a0e1a', '#111827'],
+      forest:   ['#10b981', '#0a1410', '#122019'],
+      sunset:   ['#f97316', '#1a0a0f', '#2a1219'],
+      rose:     ['#ec4899', '#14080f', '#20101a'],
+      light:    ['#6c5ce7', '#f5f5fa', '#ffffff'],
+    };
+    return (swatches[themeId] || swatches.midnight)[n - 1];
+  },
+
+  set(themeId) { this.apply(themeId); },
+  get current() { return this._current; }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Demo Mode — sample data for no-backend preview
+   ═══════════════════════════════════════════════════════ */
+const DemoMode = {
+  _active: false,
+
+  SAMPLE_CARDS: [
+    { id: 1, question: 'Hello', answer: '你好', box_number: 1, category_name: '英语', category: 1, created_at: '2025-01-01T00:00:00Z' },
+    { id: 2, question: 'World', answer: '世界', box_number: 2, category_name: '英语', category: 1, created_at: '2025-01-02T00:00:00Z' },
+    { id: 3, question: 'abandon', answer: '放弃；抛弃', box_number: 1, category_name: '英语', category: 1, created_at: '2025-01-03T00:00:00Z' },
+    { id: 4, question: 'beautiful', answer: '美丽的', box_number: 3, category_name: '英语', category: 1, created_at: '2025-01-04T00:00:00Z' },
+    { id: 5, question: 'courage', answer: '勇气', box_number: 2, category_name: '英语', category: 1, created_at: '2025-01-05T00:00:00Z' },
+    { id: 6, question: 'Python 列表推导式', answer: '[x for x in iterable if condition]', box_number: 4, category_name: '编程', category: 2, created_at: '2025-01-06T00:00:00Z' },
+    { id: 7, question: 'HTTP 200', answer: 'OK — 请求成功', box_number: 3, category_name: '编程', category: 2, created_at: '2025-01-07T00:00:00Z' },
+    { id: 8, question: 'Django ORM', answer: '对象关系映射，用 Python 操作数据库', box_number: 2, category_name: '编程', category: 2, created_at: '2025-01-08T00:00:00Z' },
+    { id: 9, question: 'Leitner 系统', answer: '间隔重复学习法，5个盒子逐步升级', box_number: 5, category_name: '学习方法', category: 3, created_at: '2025-01-09T00:00:00Z' },
+    { id: 10, question: '埃菲尔铁塔', answer: '位于法国巴黎，建于1889年', box_number: 1, category_name: '地理', category: 4, created_at: '2025-01-10T00:00:00Z' },
+  ],
+
+  SAMPLE_DASHBOARD: {
+    total_cards: 10,
+    today_reviewed: 5,
+    today_accuracy: 80,
+    streak_days: 3,
+    cards_by_box: { '1': 3, '2': 3, '3': 2, '4': 1, '5': 1 },
+  },
+
+  SAMPLE_DAILY: [
+    { date: '2025-07-26', cards_reviewed: 3 },
+    { date: '2025-07-27', cards_reviewed: 7 },
+    { date: '2025-07-28', cards_reviewed: 0 },
+    { date: '2025-07-29', cards_reviewed: 5 },
+    { date: '2025-07-30', cards_reviewed: 12 },
+    { date: '2025-07-31', cards_reviewed: 8 },
+    { date: '2025-08-01', cards_reviewed: 5 },
+  ],
+
+  SAMPLE_CATEGORIES: [
+    { id: 1, name: '英语', card_count: 5 },
+    { id: 2, name: '编程', card_count: 3 },
+    { id: 3, name: '学习方法', card_count: 1 },
+    { id: 4, name: '地理', card_count: 1 },
+  ],
+
+  enter() {
+    this._active = true;
+    sessionStorage.setItem('fc_demo', '1');
+    // Set a fake user
+    localStorage.setItem('fc_user', 'demo_user');
+    localStorage.setItem('fc_access', 'demo_token');
+    localStorage.setItem('fc_refresh', 'demo_refresh');
+    location.reload();
+  },
+
+  exit() {
+    this._active = false;
+    sessionStorage.removeItem('fc_demo');
+    localStorage.removeItem('fc_user');
+    localStorage.removeItem('fc_access');
+    localStorage.removeItem('fc_refresh');
+    location.reload();
+  },
+
+  isActive() {
+    return sessionStorage.getItem('fc_demo') === '1';
+  },
+
+  // Intercept API calls and return sample data
+  async get(path) {
+    await new Promise(r => setTimeout(r, 300)); // simulate latency
+    if (path === '/dashboard/') return { ...this.SAMPLE_DASHBOARD };
+    if (path === '/cards/') return this.SAMPLE_CARDS.map(c => ({ ...c }));
+    if (path === '/categories/') return this.SAMPLE_CATEGORIES;
+    if (path === '/stats/daily/') return this.SAMPLE_DAILY;
+    if (path.startsWith('/cards/') && path.endsWith('/')) {
+      const id = parseInt(path.split('/')[2]);
+      const card = this.SAMPLE_CARDS.find(c => c.id === id);
+      if (card) return { ...card };
+    }
+    if (path.startsWith('/boxes/') && path.endsWith('/check/')) {
+      const box = parseInt(path.split('/')[2]);
+      const card = this.SAMPLE_CARDS.find(c => c.box_number === box);
+      if (card) return { ...card };
+      return { message: '这个盒子里没有卡片了！' };
+    }
+    return {};
+  },
+
+  async post(path, body) {
+    await new Promise(r => setTimeout(r, 300));
+    if (path === '/auth/login/') {
+      return { access: 'demo_token', refresh: 'demo_refresh', user: 'demo_user' };
+    }
+    if (path.endsWith('/check/')) {
+      // Simulate box movement
+      const cardId = parseInt(path.split('/')[2]);
+      const card = this.SAMPLE_CARDS.find(c => c.id === cardId);
+      if (card) {
+        if (body.result === 'knew' && card.box_number < 5) card.box_number++;
+        else if (body.result !== 'knew') card.box_number = 1;
+      }
+      return { feedback: body.result === 'knew' ? '答对了！卡片升级' : '没关系，继续加油' };
+    }
+    if (path === '/cards/') {
+      const newCard = {
+        id: Date.now(),
+        question: body.question,
+        answer: body.answer,
+        box_number: body.box || 1,
+        category_name: '演示',
+        category: body.category || 1,
+        created_at: new Date().toISOString(),
+      };
+      this.SAMPLE_CARDS.push(newCard);
+      return newCard;
+    }
+    return {};
+  },
+
+  async patch(path, body) {
+    await new Promise(r => setTimeout(r, 300));
+    const id = parseInt(path.split('/')[2]);
+    const card = this.SAMPLE_CARDS.find(c => c.id === id);
+    if (card) {
+      if (body.question) card.question = body.question;
+      if (body.answer) card.answer = body.answer;
+      if (body.box) card.box_number = body.box;
+    }
+    return card || {};
+  },
+
+  async delete(path) {
+    await new Promise(r => setTimeout(r, 300));
+    const id = parseInt(path.split('/')[2]);
+    const idx = this.SAMPLE_CARDS.findIndex(c => c.id === id);
+    if (idx >= 0) this.SAMPLE_CARDS.splice(idx, 1);
+    return {};
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Connection Status — backend reachability indicator
+   ═══════════════════════════════════════════════════════ */
+const ConnStatus = {
+  _state: 'unknown', // 'online' | 'offline' | 'demo' | 'unknown'
+
+  init() {
+    if (DemoMode.isActive()) {
+      this._setState('demo');
+      return;
+    }
+    this.check();
+    // Re-check every 30s
+    setInterval(() => this.check(), 30000);
+    // Listen for browser online/offline events
+    window.addEventListener('online', () => this.check());
+    window.addEventListener('offline', () => this._setState('offline'));
+  },
+
+  async check() {
+    if (DemoMode.isActive()) { this._setState('demo'); return; }
+    const base = Config.API_BASE;
+    if (!base) { this._setState('demo'); return; }
+    try {
+      const res = await fetch(base.replace('/api', '') + '/api/health/', {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000),
+      });
+      this._setState(res.ok ? 'online' : 'offline');
+    } catch {
+      // Try a simpler check — just see if we get any response
+      try {
+        const res = await fetch(base.replace('/api', '') + '/', {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(3000),
+        });
+        this._setState('online');
+      } catch {
+        this._setState('offline');
+      }
+    }
+  },
+
+  _setState(state) {
+    this._state = state;
+    const el = $('#conn-status');
+    const text = $('#conn-status-text');
+    if (!el || !text) return;
+    el.className = 'conn-status visible ' + state;
+    if (state === 'online') text.textContent = '已连接';
+    else if (state === 'offline') text.textContent = '后端离线';
+    else if (state === 'demo') text.textContent = '演示模式';
+    else text.textContent = '连接中';
+  },
+
+  get state() { return this._state; }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Auth Module
+   ═══════════════════════════════════════════════════════ */
+const Auth = {
+  getAccess() { return localStorage.getItem('fc_access'); },
+  getRefresh() { return localStorage.getItem('fc_refresh'); },
+  getUser() { return localStorage.getItem('fc_user'); },
+  isLoggedIn() { return !!this.getAccess(); },
+
+  saveTokens(access, refresh) {
+    localStorage.setItem('fc_access', access);
+    if (refresh) localStorage.setItem('fc_refresh', refresh);
+  },
+  saveUser(username) { localStorage.setItem('fc_user', username); },
+
+  async login(username, password) {
+    if (DemoMode.isActive()) {
+      this.saveTokens('demo_token', 'demo_refresh');
+      this.saveUser(username);
+      return { access: 'demo_token', refresh: 'demo_refresh' };
+    }
+    if (!Config.API_BASE) {
+      throw new Error('请先在设置中配置后端 API 地址，或使用演示模式');
+    }
+    const res = await fetch(`${Config.API_BASE}/auth/login/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || data.error || '登录失败');
+    }
+    const data = await res.json();
+    this.saveTokens(data.access, data.refresh);
+    this.saveUser(username);
+    return data;
+  },
+
+  async register(username, password, email) {
+    if (DemoMode.isActive()) {
+      throw new Error('演示模式不支持注册');
+    }
+    if (!Config.API_BASE) {
+      throw new Error('请先在设置中配置后端 API 地址');
+    }
+    const body = { username, password };
+    if (email) body.email = email;
+    const res = await fetch(`${Config.API_BASE}/auth/register/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.username?.[0] || '注册失败');
+    }
+    return await res.json();
+  },
+
+  async refreshAccessToken() {
+    if (DemoMode.isActive()) return 'demo_token';
+    const refresh = this.getRefresh();
+    if (!refresh) { this._forceLogout(); return null; }
+    if (!Config.API_BASE) { this._forceLogout(); return null; }
+    try {
+      const res = await fetch(`${Config.API_BASE}/auth/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh })
+      });
+      if (!res.ok) { this._forceLogout(); return null; }
+      const data = await res.json();
+      this.saveTokens(data.access, null);
+      return data.access;
+    } catch {
+      this._forceLogout();
+      return null;
+    }
+  },
+
+  _forceLogout() {
+    localStorage.removeItem('fc_access');
+    localStorage.removeItem('fc_refresh');
+    localStorage.removeItem('fc_user');
+    // Defer reload so the current request chain can unwind
+    setTimeout(() => location.reload(), 100);
+  },
+
+  logout() {
+    localStorage.removeItem('fc_access');
+    localStorage.removeItem('fc_refresh');
+    localStorage.removeItem('fc_user');
+    location.reload();
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   API Module — fetch wrapper with JWT & refresh
+   ═══════════════════════════════════════════════════════ */
+const API = {
+  async request(path, options = {}) {
+    if (!Config.API_BASE) {
+      throw new Error('后端未配置，请进入设置配置 API 地址');
+    }
+    const token = Auth.getAccess();
+    const headers = { ...options.headers };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    }
+
+    let res = await fetch(`${Config.API_BASE}${path}`, { ...options, headers });
+
+    if (res.status === 401 && token) {
+      const newToken = await Auth.refreshAccessToken();
+      if (newToken) {
+        headers['Authorization'] = `Bearer ${newToken}`;
+        res = await fetch(`${Config.API_BASE}${path}`, { ...options, headers });
+      }
+    }
+    return res;
+  },
+
+  async get(path) {
+    // Demo mode intercept
+    if (DemoMode.isActive()) return DemoMode.get(path);
+    const res = await this.request(path);
+    if (!res.ok) throw new Error(`请求失败: ${res.status}`);
+    return res.json();
+  },
+
+  async post(path, body) {
+    if (DemoMode.isActive()) return DemoMode.post(path, body);
+    const res = await this.request(path, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.detail || '操作失败');
+    }
+    return res.json();
+  },
+
+  async put(path, body) {
+    if (DemoMode.isActive()) return DemoMode.patch(path, body);
+    const res = await this.request(path, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.detail || '更新失败');
+    }
+    return res.json();
+  },
+
+  async patch(path, body) {
+    if (DemoMode.isActive()) return DemoMode.patch(path, body);
+    const res = await this.request(path, {
+      method: 'PATCH',
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.detail || '更新失败');
+    }
+    return res.json();
+  },
+
+  async del(path) {
+    if (DemoMode.isActive()) return DemoMode.delete(path);
+    const res = await this.request(path, { method: 'DELETE' });
+    if (!res.ok && res.status !== 204) throw new Error('删除失败');
+  },
+
+  async upload(path, formData) {
+    const res = await this.request(path, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || '上传失败');
+    }
+    return res.json();
+  },
+
+  async download(path) {
+    const res = await this.request(path);
+    if (!res.ok) throw new Error('下载失败');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'flashcards.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   State — simple reactive store
+   ═══════════════════════════════════════════════════════ */
+const State = {
+  _data: {},
+  _listeners: {},
+
+  set(key, value) {
+    this._data[key] = value;
+    (this._listeners[key] || []).forEach(fn => fn(value));
+  },
+
+  get(key) { return this._data[key]; },
+
+  on(key, fn) {
+    if (!this._listeners[key]) this._listeners[key] = [];
+    this._listeners[key].push(fn);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Router — hash-based SPA routing
+   ═══════════════════════════════════════════════════════ */
+const Router = {
+  routes: ['dashboard','cards','review','stats','settings'],
+  current: 'dashboard',
+
+  init() {
+    $$('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => this.navigate(btn.dataset.route));
+    });
+    window.addEventListener('hashchange', () => this.handleRoute());
+    this.handleRoute();
+  },
+
+  navigate(route) {
+    window.location.hash = route;
+  },
+
+  handleRoute() {
+    const hash = window.location.hash.slice(1) || 'dashboard';
+    const route = this.routes.includes(hash) ? hash : 'dashboard';
+    this.current = route;
+
+    $$('.page').forEach(p => p.classList.remove('active'));
+    const page = $(`#page-${route}`);
+    if (page) page.classList.add('active');
+
+    $$('.nav-item').forEach(n => n.classList.remove('active'));
+    const navBtn = $(`.nav-item[data-route="${route}"]`);
+    if (navBtn) navBtn.classList.add('active');
+
+    // FAB visibility
+    const fab = $('#fab-add');
+    fab.style.display = (route === 'cards') ? 'flex' : 'none';
+
+    // Page-specific init
+    if (route === 'dashboard') App.dashboard.load();
+    if (route === 'cards') App.cards.load();
+    if (route === 'review') App.review.init();
+    if (route === 'stats') App.stats.load();
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Sticky Module — Engagement Features
+   ═══════════════════════════════════════════════════════ */
+const Sticky = {
+  _dailyGoal: 20,
+  _reviewCombo: 0,
+  _totalXP: 0,
+  _sessionCorrect: 0,
+  _sessionTotal: 0,
+  _unlockedBadges: new Set(),
+
+  init() {
+    // Restore persisted state
+    this._dailyGoal = parseInt(localStorage.getItem('fc_daily_goal')) || 20;
+    this._totalXP = parseInt(localStorage.getItem('fc_total_xp')) || 0;
+    this._reviewCombo = parseInt(localStorage.getItem('fc_review_combo')) || 0;
+    try {
+      const badges = JSON.parse(localStorage.getItem('fc_badges') || '[]');
+      this._unlockedBadges = new Set(badges);
+    } catch { this._unlockedBadges = new Set(); }
+    const goalTarget = $('#goal-target');
+    if (goalTarget) goalTarget.textContent = this._dailyGoal;
+  },
+
+  adjustGoal(delta) {
+    this._dailyGoal = Math.max(5, Math.min(100, this._dailyGoal + delta));
+    localStorage.setItem('fc_daily_goal', this._dailyGoal);
+    $('#goal-target').textContent = this._dailyGoal;
+    // Re-render if dashboard data available
+    const data = State.get('dashboard');
+    if (data) this.updateGoalRing(data.today_reviewed);
+  },
+
+  updateGoalRing(todayReviewed) {
+    const pct = Math.min(1, todayReviewed / this._dailyGoal);
+    const circumference = 188.5; // 2 * PI * 30
+    const offset = circumference * (1 - pct);
+    const ring = $('#goal-ring-fill');
+    if (ring) ring.style.strokeDashoffset = offset;
+    const text = $('#goal-ring-text');
+    if (text) text.textContent = Math.round(pct * 100) + '%';
+    const sub = $('#goal-subtitle');
+    if (sub) sub.textContent = `已复习 ${todayReviewed} / ${this._dailyGoal} 张`;
+    // Goal completion celebration
+    if (pct >= 1 && !this._goalCelebratedToday()) {
+      this._markGoalCelebrated();
+      setTimeout(() => {
+        Toast.success('🎉 每日目标达成！太棒了！');
+        this.burstParticles(window.innerWidth / 2, window.innerHeight / 2, ['#6c5ce7','#2ecc71','#f39c12','#00b894','#e74c3c'], 30);
+      }, 300);
+    }
+  },
+
+  _goalCelebratedToday() {
+    const key = 'fc_goal_done_' + new Date().toISOString().slice(0, 10);
+    return localStorage.getItem(key) === '1';
+  },
+  _markGoalCelebrated() {
+    const key = 'fc_goal_done_' + new Date().toISOString().slice(0, 10);
+    localStorage.setItem(key, '1');
+  },
+
+  updateStreak(streakDays, todayReviewed) {
+    const countEl = $('#streak-count');
+    const subEl = $('#streak-sublabel');
+    const widget = $('#streak-widget');
+    if (countEl) this._animateCount(countEl, streakDays);
+    if (subEl) subEl.textContent = todayReviewed > 0 ? '今日已复习，继续保持！' : '今天还没复习';
+    if (widget) {
+      if (streakDays > 0) widget.classList.add('active');
+      else widget.classList.remove('active');
+    }
+    // Hide flame if no streak
+    const flame = $('#streak-flame');
+    if (flame) flame.style.opacity = streakDays > 0 ? '1' : '0.25';
+  },
+
+  _animateCount(el, target) {
+    const start = parseInt(el.textContent) || 0;
+    if (start === target) { el.textContent = target; return; }
+    const duration = 600;
+    const startTime = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(start + (target - start) * eased);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  },
+
+  onReviewAnswer(correct) {
+    this._sessionTotal++;
+    if (correct) {
+      this._sessionCorrect++;
+      this._reviewCombo++;
+      // XP: base 10 + combo bonus
+      const xp = 10 + Math.min(this._reviewCombo, 10) * 2;
+      this._totalXP += xp;
+    } else {
+      this._reviewCombo = 0;
+      this._totalXP += 3; // small XP for trying
+    }
+    localStorage.setItem('fc_total_xp', this._totalXP);
+    localStorage.setItem('fc_review_combo', this._reviewCombo);
+  },
+
+  getCombo() { return this._reviewCombo; },
+
+  // ─── Achievement Badges ───
+  _BADGES: [
+    { id: 'first_card', icon: '🃏', label: '初出茅庐', desc: '添加第一张卡片', bg: 'linear-gradient(135deg,#6c5ce7,#a29bfe)' },
+    { id: 'ten_cards', icon: '📚', label: '小有规模', desc: '拥有10张卡片', bg: 'linear-gradient(135deg,#00b894,#55efc4)' },
+    { id: 'fifty_cards', icon: '📖', label: '知识宝库', desc: '拥有50张卡片', bg: 'linear-gradient(135deg,#f39c12,#fdcb6e)' },
+    { id: 'first_review', icon: '✅', label: '初次复习', desc: '完成第一次复习', bg: 'linear-gradient(135deg,#2ecc71,#00b894)' },
+    { id: 'streak_3', icon: '🔥', label: '三日之焰', desc: '连续学习3天', bg: 'linear-gradient(135deg,#e74c3c,#f39c12)' },
+    { id: 'streak_7', icon: '💪', label: '七日之坚', desc: '连续学习7天', bg: 'linear-gradient(135deg,#e74c3c,#c0392b)' },
+    { id: 'streak_30', icon: '🏆', label: '月度大师', desc: '连续学习30天', bg: 'linear-gradient(135deg,#f39c12,#e67e22)' },
+    { id: 'combo_5', icon: '⚡', label: '五连正确', desc: '连续答对5次', bg: 'linear-gradient(135deg,#3498db,#2980b9)' },
+    { id: 'combo_10', icon: '🌟', label: '十连正确', desc: '连续答对10次', bg: 'linear-gradient(135deg,#9b59b6,#8e44ad)' },
+    { id: 'goal_done', icon: '🎯', label: '目标达成', desc: '完成每日目标', bg: 'linear-gradient(135deg,#2ecc71,#27ae60)' },
+    { id: 'xp_100', icon: '💎', label: '百点经验', desc: '累计100 XP', bg: 'linear-gradient(135deg,#6c5ce7,#4834d4)' },
+    { id: 'xp_500', icon: '👑', label: '经验王者', desc: '累计500 XP', bg: 'linear-gradient(135deg,#f39c12,#e74c3c)' },
+  ],
+
+  checkAndUnlockBadges(context) {
+    const newlyUnlocked = [];
+    const c = context || {};
+
+    const checks = {
+      first_card: c.totalCards >= 1,
+      ten_cards: c.totalCards >= 10,
+      fifty_cards: c.totalCards >= 50,
+      first_review: c.totalReviews >= 1,
+      streak_3: c.streakDays >= 3,
+      streak_7: c.streakDays >= 7,
+      streak_30: c.streakDays >= 30,
+      combo_5: this._reviewCombo >= 5,
+      combo_10: this._reviewCombo >= 10,
+      goal_done: c.todayReviewed >= this._dailyGoal,
+      xp_100: this._totalXP >= 100,
+      xp_500: this._totalXP >= 500,
+    };
+
+    for (const [id, condition] of Object.entries(checks)) {
+      if (condition && !this._unlockedBadges.has(id)) {
+        this._unlockedBadges.add(id);
+        newlyUnlocked.push(id);
+      }
+    }
+
+    if (newlyUnlocked.length > 0) {
+      localStorage.setItem('fc_badges', JSON.stringify([...this._unlockedBadges]));
+      // Show unlock toast for the first new badge
+      const badge = this._BADGES.find(b => b.id === newlyUnlocked[0]);
+      if (badge) {
+        Toast.success(`🏆 成就解锁: ${badge.label}！`);
+      }
+    }
+
+    return newlyUnlocked;
+  },
+
+  renderBadges(newlyUnlocked = []) {
+    const row = $('#achievements-row');
+    if (!row) return;
+    row.innerHTML = this._BADGES.map((b, i) => {
+      const unlocked = this._unlockedBadges.has(b.id);
+      const justUnlocked = newlyUnlocked.includes(b.id);
+      return `<div class="badge-item ${unlocked ? '' : 'locked'}" style="animation-delay:${i * 0.05}s">
+        <div class="badge-icon ${unlocked ? 'unlocked' : 'locked'} ${justUnlocked ? 'just-unlocked' : ''}"
+          style="${unlocked ? `background:${b.bg}` : ''}" title="${b.desc}">
+          ${b.icon}
+        </div>
+        <div class="badge-label">${b.label}</div>
+      </div>`;
+    }).join('');
+  },
+
+  // ─── Particle Burst ───
+  burstParticles(x, y, colors = ['#2ecc71','#27ae60'], count = 12) {
+    const container = document.createElement('div');
+    container.className = 'particle-container';
+    container.style.left = x + 'px';
+    container.style.top = y + 'px';
+    document.body.appendChild(container);
+
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.5;
+      const dist = 40 + Math.random() * 60;
+      p.style.setProperty('--px', Math.cos(angle) * dist + 'px');
+      p.style.setProperty('--py', Math.sin(angle) * dist + 'px');
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.width = (4 + Math.random() * 6) + 'px';
+      p.style.height = p.style.width;
+      p.style.animationDuration = (0.5 + Math.random() * 0.4) + 's';
+      container.appendChild(p);
+    }
+    setTimeout(() => container.remove(), 1000);
+  },
+
+  // ─── Heatmap ───
+  renderHeatmap(dailyData) {
+    const grid = $('#heatmap-grid');
+    if (!grid) return;
+
+    // Build a map of date -> count
+    const dateMap = {};
+    (dailyData || []).forEach(d => {
+      dateMap[d.date.slice(0, 10)] = d.cards_reviewed;
+    });
+
+    // Show last 28 days (4 weeks)
+    const today = new Date();
+    const cells = [];
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const count = dateMap[key] || 0;
+      const isToday = i === 0;
+      let level = '';
+      if (count > 0) level = count <= 3 ? 'l1' : count <= 7 ? 'l2' : count <= 12 ? 'l3' : 'l4';
+      cells.push(`<div class="heatmap-cell ${level} ${isToday ? 'today' : ''}" title="${key}: ${count}张" style="animation:heatCellIn 0.3s ease ${(27 - i) * 0.02}s both"></div>`);
+    }
+    grid.innerHTML = cells.join('');
+  },
+
+  // ─── Local Data Persistence ───
+  saveReviewLocally(cardId, result, fromBox, toBox) {
+    try {
+      const key = 'fc_local_reviews';
+      const reviews = JSON.parse(localStorage.getItem(key) || '[]');
+      reviews.push({
+        card_id: cardId,
+        result,
+        from_box: fromBox,
+        to_box: toBox,
+        ts: Date.now()
+      });
+      // Keep last 500
+      if (reviews.length > 500) reviews.splice(0, reviews.length - 500);
+      localStorage.setItem(key, JSON.stringify(reviews));
+    } catch {}
+  },
+
+  getLocalReviews() {
+    try {
+      return JSON.parse(localStorage.getItem('fc_local_reviews') || '[]');
+    } catch { return []; }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Dashboard Module (Enhanced)
+   ═══════════════════════════════════════════════════════ */
+const Dashboard = {
+  async load() {
+    const grid = $('#stats-grid');
+    const boxDist = $('#box-distribution');
+    const handContainer = $('#card-hand-container');
+    const greeting = $('#dashboard-greeting');
+
+    // Show shimmer
+    grid.innerHTML = Array(4).fill('<div class="shimmer shimmer-card"></div>').join('');
+    boxDist.innerHTML = Array(5).fill('<div class="shimmer shimmer-line" style="height:24px"></div>').join('');
+    handContainer.innerHTML = '<div style="display:flex;gap:12px">' + Array(4).fill('<div class="shimmer" style="min-width:140px;height:190px;border-radius:16px"></div>').join('') + '</div>';
+
+    try {
+      const data = await API.get('/dashboard/');
+      State.set('dashboard', data);
+
+      const hour = new Date().getHours();
+      let greet = '夜深了，注意休息 🌙';
+      if (hour >= 6 && hour < 12) greet = '早上好，开始新的一天 🌅';
+      else if (hour >= 12 && hour < 18) greet = '下午好，继续加油 ☀️';
+      else if (hour >= 18 && hour < 22) greet = '晚上好，坚持学习 🌆';
+      greeting.textContent = greet;
+
+      // Update streak flame widget
+      Sticky.updateStreak(data.streak_days, data.today_reviewed);
+
+      // Update goal ring
+      Sticky.updateGoalRing(data.today_reviewed);
+
+      // Stats Grid with count-up animation
+      const stats = [
+        { icon: '🃏', value: data.total_cards, label: '总卡片', color: 'var(--primary)', bg: 'var(--primary-dim)' },
+        { icon: '📝', value: data.today_reviewed, label: '今日复习', color: 'var(--accent)', bg: 'rgba(0,184,148,0.12)' },
+        { icon: '🎯', value: data.today_accuracy + '%', label: '正确率', color: 'var(--success)', bg: 'rgba(46,204,113,0.12)' },
+        { icon: '💎', value: Sticky._totalXP, label: '总 XP', color: 'var(--warning)', bg: 'rgba(243,156,18,0.12)' },
+      ];
+      grid.innerHTML = stats.map((s, i) => `
+        <div class="stat-card stagger-item" style="animation-delay:${i * 0.08}s">
+          <div class="stat-icon" style="background:${s.bg};color:${s.color}">${s.icon}</div>
+          <div class="stat-value stat-value-animated" style="animation-delay:${i * 0.08 + 0.1}s">${s.value}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>
+      `).join('');
+
+      // Check & render achievements
+      const badgeContext = {
+        totalCards: data.total_cards,
+        streakDays: data.streak_days,
+        todayReviewed: data.today_reviewed,
+        totalReviews: data.today_reviewed,
+      };
+      const newBadges = Sticky.checkAndUnlockBadges(badgeContext);
+      Sticky.renderBadges(newBadges);
+
+      // Box Distribution
+      const maxCount = Math.max(1, ...Object.values(data.cards_by_box));
+      boxDist.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const count = data.cards_by_box[String(i)] || 0;
+        const pct = (count / maxCount * 100).toFixed(1);
+        const color = boxColor(i);
+        boxDist.innerHTML += `
+          <div class="box-bar-row stagger-item" style="animation-delay:${(i-1) * 0.06}s">
+            <span class="box-label" style="color:${color}">Box ${i}</span>
+            <div class="box-bar-track">
+              <div class="box-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${color},${color}cc)">
+                <span>${count}</span>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // Card Hand
+      if (data.total_cards === 0) {
+        handContainer.innerHTML = `
+          <div class="empty-state" style="padding:30px 0">
+            <div class="empty-icon">🃏</div>
+            <h3>还没有卡片</h3>
+            <p>快去添加第一张闪卡吧！</p>
+          </div>`;
+      } else {
+        const cards = await API.get('/cards/');
+        const shown = cards.slice(0, 10);
+        handContainer.innerHTML = `<div class="card-hand-scroll">${shown.map((c, i) => {
+          const color = boxColor(c.box_number);
+          return `<div class="hand-card stagger-item" style="background:linear-gradient(135deg,${color}e6,${color}99);box-shadow:0 6px 20px ${color}44;animation-delay:${i * 0.05}s" onclick="App.cards.showDetail(${c.id})">
+            <span class="box-tag">Box ${c.box_number}</span>
+            <div class="card-q">${escapeHtml(c.question)}</div>
+            <div class="card-tap">点击查看 →</div>
+          </div>`;
+        }).join('')}</div>`;
+      }
+    } catch (e) {
+      Toast.error('加载仪表盘失败: ' + e.message);
+      grid.innerHTML = '<div class="empty-state"><p>加载失败，请下拉刷新</p></div>';
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Cards Module
+   ═══════════════════════════════════════════════════════ */
+const Cards = {
+  _cards: [],
+  _categories: [],
+  _filterBox: null,
+  _filterCategory: null,
+  _searchQuery: '',
+
+  async load() {
+    const list = $('#card-list');
+    list.innerHTML = Array(5).fill('<div class="shimmer shimmer-card"></div>').join('');
+
+    try {
+      const [cards, categories] = await Promise.all([
+        API.get('/cards/'),
+        API.get('/categories/')
+      ]);
+      this._cards = cards;
+      this._categories = categories;
+      State.set('cards', cards);
+      State.set('categories', categories);
+      this._renderFilters();
+      this._renderCards();
+    } catch (e) {
+      Toast.error('加载卡片失败: ' + e.message);
+      list.innerHTML = '';
+    }
+  },
+
+  _renderFilters() {
+    const row = $('#card-filters');
+    let html = `<button class="filter-chip ${!this._filterBox ? 'active' : ''}" data-filter="box" data-value="">全部</button>`;
+    for (let i = 1; i <= 5; i++) {
+      const count = this._cards.filter(c => c.box_number === i).length;
+      const active = this._filterBox === i ? 'active' : '';
+      html += `<button class="filter-chip ${active}" data-filter="box" data-value="${i}" style="${active ? `border-color:${boxColor(i)};color:${boxColor(i)};background:${boxColor(i)}1a` : ''}">Box ${i} (${count})</button>`;
+    }
+    if (this._categories.length > 0) {
+      html += `<span style="width:1px;height:20px;background:var(--border);flex-shrink:0"></span>`;
+      this._categories.forEach(cat => {
+        const active = this._filterCategory === cat.id ? 'active' : '';
+        html += `<button class="filter-chip ${active}" data-filter="category" data-value="${cat.id}">${escapeHtml(cat.name)}</button>`;
+      });
+    }
+    row.innerHTML = html;
+
+    // Bind events
+    row.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const filter = chip.dataset.filter;
+        const value = chip.dataset.value;
+        if (filter === 'box') {
+          this._filterBox = value ? parseInt(value) : null;
+        } else if (filter === 'category') {
+          this._filterCategory = value ? parseInt(value) : null;
+        }
+        this._renderFilters();
+        this._renderCards();
+      });
+    });
+  },
+
+  _renderCards() {
+    const list = $('#card-list');
+    let filtered = [...this._cards];
+
+    if (this._filterBox) {
+      filtered = filtered.filter(c => c.box_number === this._filterBox);
+    }
+    if (this._filterCategory) {
+      filtered = filtered.filter(c => c.category === this._filterCategory);
+    }
+    if (this._searchQuery) {
+      const q = this._searchQuery.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.question.toLowerCase().includes(q) || c.answer.toLowerCase().includes(q)
+      );
+    }
+
+    $('#cards-count').textContent = `共 ${this._cards.length} 张卡片`;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <h3>没有找到卡片</h3>
+          <p>${this._searchQuery ? '试试其他关键词' : '点击右下角按钮添加新卡片'}</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map((c, i) => {
+      const color = boxColor(c.box_number);
+      return `<div class="card-item stagger-item" style="animation-delay:${i * 0.04}s" onclick="App.cards.showDetail(${c.id})">
+        <div class="card-top">
+          <div class="card-question">${escapeHtml(c.question)}</div>
+          <div class="card-actions">
+            <button class="card-action-btn" onclick="event.stopPropagation();App.cards.showEditModal(${c.id})" title="编辑">✏️</button>
+            <button class="card-action-btn" onclick="event.stopPropagation();App.cards.deleteCard(${c.id})" title="删除">🗑️</button>
+          </div>
+        </div>
+        <div class="card-answer">${escapeHtml(c.answer)}</div>
+        <div class="card-meta">
+          <span class="box-badge" style="background:${color}">Box ${c.box_number}</span>
+          ${c.category_name ? `<span class="category-badge">${escapeHtml(c.category_name)}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  showAddModal() {
+    const catOptions = this._categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">添加新卡片</div>
+      <div class="modal-form">
+        <div class="form-group">
+          <label>问题 *</label>
+          <textarea id="m-question" placeholder="输入问题" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>答案 *</label>
+          <textarea id="m-answer" placeholder="输入答案" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>盒子</label>
+          <select id="m-box">
+            <option value="1">Box 1 - 每天</option>
+            <option value="2">Box 2 - 每2天</option>
+            <option value="3">Box 3 - 每4天</option>
+            <option value="4">Box 4 - 每8天</option>
+            <option value="5">Box 5 - 每16天</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select id="m-category">
+            <option value="">无分类</option>
+            ${catOptions}
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal secondary" onclick="Modal.close()">取消</button>
+          <button class="btn-modal primary" onclick="App.cards.addCard()">添加</button>
+        </div>
+      </div>
+    `);
+  },
+
+  async addCard() {
+    const question = $('#m-question').value.trim();
+    const answer = $('#m-answer').value.trim();
+    if (!question || !answer) { Toast.error('问题和答案不能为空'); return; }
+
+    const body = { question, answer };
+    const box = $('#m-box').value;
+    if (box) body.box = parseInt(box);
+    const category = $('#m-category').value;
+    if (category) body.category = parseInt(category);
+
+    try {
+      await API.post('/cards/', body);
+      Modal.close();
+      Toast.success('卡片添加成功');
+      // Check card count badges
+      try {
+        const cards = await API.get('/cards/');
+        const newBadges = Sticky.checkAndUnlockBadges({ totalCards: cards.length });
+        if (newBadges.length) Sticky.renderBadges(newBadges);
+      } catch {}
+      this.load();
+    } catch (e) {
+      Toast.error('添加失败: ' + e.message);
+    }
+  },
+
+  showEditModal(id) {
+    const card = this._cards.find(c => c.id === id);
+    if (!card) return;
+    const catOptions = this._categories.map(c =>
+      `<option value="${c.id}" ${card.category === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+    ).join('');
+
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">编辑卡片</div>
+      <div class="modal-form">
+        <div class="form-group">
+          <label>问题 *</label>
+          <textarea id="m-question" rows="3">${escapeHtml(card.question)}</textarea>
+        </div>
+        <div class="form-group">
+          <label>答案 *</label>
+          <textarea id="m-answer" rows="3">${escapeHtml(card.answer)}</textarea>
+        </div>
+        <div class="form-group">
+          <label>盒子</label>
+          <select id="m-box">
+            ${[1,2,3,4,5].map(i => `<option value="${i}" ${card.box_number===i?'selected':''}>Box ${i}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select id="m-category">
+            <option value="">无分类</option>
+            ${catOptions}
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal secondary" onclick="Modal.close()">取消</button>
+          <button class="btn-modal primary" onclick="App.cards.updateCard(${id})">保存</button>
+        </div>
+      </div>
+    `);
+  },
+
+  async updateCard(id) {
+    const question = $('#m-question').value.trim();
+    const answer = $('#m-answer').value.trim();
+    if (!question || !answer) { Toast.error('问题和答案不能为空'); return; }
+
+    const body = { question, answer };
+    const box = $('#m-box').value;
+    body.box = parseInt(box);
+    const category = $('#m-category').value;
+    body.category = category ? parseInt(category) : null;
+
+    try {
+      await API.patch(`/cards/${id}/`, body);
+      Modal.close();
+      Toast.success('卡片已更新');
+      this.load();
+    } catch (e) {
+      Toast.error('更新失败: ' + e.message);
+    }
+  },
+
+  async deleteCard(id) {
+    if (!confirm('确定要删除这张卡片吗？')) return;
+    try {
+      await API.del(`/cards/${id}/`);
+      Toast.success('卡片已删除');
+      this.load();
+    } catch (e) {
+      Toast.error('删除失败: ' + e.message);
+    }
+  },
+
+  async showDetail(id) {
+    let card = this._cards.find(c => c.id === id);
+    // If card not in cache (e.g. called from dashboard), fetch it
+    if (!card) {
+      try {
+        card = await API.get(`/cards/${id}/`);
+      } catch (e) {
+        Toast.error('无法加载卡片');
+        return;
+      }
+    }
+    const color = boxColor(card.box_number);
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div style="padding:8px 0 0;text-align:center">
+        <span class="box-badge" style="background:${color};font-size:12px;padding:4px 12px">Box ${card.box_number}</span>
+        ${card.category_name ? `<span class="category-badge" style="font-size:12px;padding:4px 12px;margin-left:6px">${escapeHtml(card.category_name)}</span>` : ''}
+      </div>
+      <div style="margin:24px 0;text-align:center">
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">问题</div>
+        <div style="font-size:18px;font-weight:700;line-height:1.5">${escapeHtml(card.question)}</div>
+      </div>
+      <div style="width:100%;height:1px;background:var(--border);margin:0 0 24px"></div>
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">答案</div>
+        <div style="font-size:16px;font-weight:600;line-height:1.5;color:var(--success)">${escapeHtml(card.answer)}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:8px">
+        创建: ${formatDateFull(card.date_created)} ${card.last_reviewed ? '| 最近复习: ' + formatDateFull(card.last_reviewed) : ''}
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal secondary" onclick="Modal.close()">关闭</button>
+        <button class="btn-modal primary" onclick="Modal.close();App.cards.showEditModal(${card.id})">编辑</button>
+      </div>
+    `);
+  }
+};
+
+// Search binding
+$('#card-search').addEventListener('input', (e) => {
+  Cards._searchQuery = e.target.value;
+  Cards._renderCards();
+});
+
+/* ═══════════════════════════════════════════════════════
+   Review Module
+   ═══════════════════════════════════════════════════════ */
+const Review = {
+  _selectedBox: null,
+  _currentCard: null,
+  _flipped: false,
+  _reviewed: 0,
+  _correct: 0,
+  _feedback: null,
+  _submitting: false,
+
+  init() {
+    this._renderBoxSelector();
+    this._reviewed = 0;
+    this._correct = 0;
+    this._feedback = null;
+    this._submitting = false;
+    this._currentCard = null;
+    this._flipped = false;
+    this._renderContent();
+  },
+
+  _renderBoxSelector() {
+    const sel = $('#box-selector');
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+      const active = this._selectedBox === i ? 'active' : '';
+      const color = boxColor(i);
+      html += `<button class="box-select-btn ${active}" data-box="${i}" style="${active ? `border-color:${color};background:${color}1a;box-shadow:0 0 16px ${color}33` : ''}">Box ${i}</button>`;
+    }
+    sel.innerHTML = html;
+
+    sel.querySelectorAll('.box-select-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        this._selectedBox = parseInt(btn.dataset.box);
+        this._flipped = false;
+        this._feedback = null;
+        this._renderBoxSelector();
+        await this._fetchCard();
+      });
+    });
+  },
+
+  async _fetchCard() {
+    if (!this._selectedBox) return;
+    const content = $('#review-content');
+    content.innerHTML = '<div class="shimmer shimmer-block"></div>';
+
+    try {
+      const data = await API.get(`/boxes/${this._selectedBox}/check/`);
+      if (data.message) {
+        this._currentCard = null;
+        this._renderContent();
+        return;
+      }
+      this._currentCard = data;
+      this._flipped = false;
+      this._renderContent();
+    } catch (e) {
+      Toast.error('获取卡片失败: ' + e.message);
+      this._currentCard = null;
+      this._renderContent();
+    }
+  },
+
+  _renderContent() {
+    const content = $('#review-content');
+    const progress = $('#review-progress');
+
+    // Progress bar
+    if (this._reviewed > 0) {
+      progress.style.display = 'flex';
+      const pct = (this._correct / this._reviewed * 100);
+      $('#review-progress-fill').style.width = pct + '%';
+      $('#review-progress-text').textContent = `${this._correct}/${this._reviewed} 正确`;
+    } else {
+      progress.style.display = 'none';
+    }
+
+    // No box selected
+    if (!this._selectedBox) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📖</div>
+          <h3>选择一个盒子开始复习</h3>
+          <p>点击上方的 Box 按钮选择要复习的盒子</p>
+        </div>`;
+      return;
+    }
+
+    // No card available
+    if (!this._currentCard) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">✨</div>
+          <h3>此盒子没有卡片</h3>
+          <p>该盒子暂无卡片，试试其他盒子</p>
+        </div>`;
+      return;
+    }
+
+    const card = this._currentCard;
+    const color = boxColor(card.box_number);
+    const backBg = `linear-gradient(135deg, ${color}, ${color}bb)`;
+    const frontBg = `linear-gradient(135deg, ${color}cc, ${color}88)`;
+
+    // Build card HTML (not flipped yet — we toggle via DOM class)
+    const combo = Sticky.getCombo();
+    const comboHtml = combo >= 2 ? `<div class="review-streak-indicator">🔥 <span class="combo-text">${combo} 连对！</span> +${Math.min(combo, 10) * 2} XP 加成</div>` : '';
+
+    content.innerHTML = `
+      <div id="review-feedback-slot"></div>
+      ${comboHtml}
+      <div class="review-area" id="review-area">
+        <div class="review-card-wrapper" id="review-card-wrapper" onclick="Review.flip()">
+          <div class="review-card-face" onclick="Review.flip()" style="background:${frontBg}">
+            <div class="face-label">问题</div>
+            <div class="face-text" id="review-question">${escapeHtml(card.question)}</div>
+            <div class="face-hint" id="review-hint-front">点击翻开查看答案</div>
+          </div>
+          <div class="review-card-face review-card-back" onclick="Review.flip()" style="background:${backBg}">
+            <div class="face-label">答案</div>
+            <div class="face-text" id="review-answer">${escapeHtml(card.answer)}</div>
+            <div class="face-hint" id="review-hint-back">点击翻回</div>
+          </div>
+        </div>
+      </div>
+      <div class="review-actions" id="review-actions">
+        <button class="review-btn btn-incorrect" id="btn-didnt-know" disabled><span class="btn-icon">❌</span> 不知道</button>
+        <button class="review-btn btn-correct" id="btn-knew" disabled><span class="btn-icon">✅</span> 知道</button>
+      </div>`;
+
+    // Bind events
+    const area = $('#review-area');
+
+    const btnKnew = $('#btn-knew');
+    const btnDidnt = $('#btn-didnt-know');
+    btnKnew.addEventListener('click', (e) => { e.stopPropagation(); this.submitAnswer('knew'); });
+    btnDidnt.addEventListener('click', (e) => { e.stopPropagation(); this.submitAnswer('didnt_know'); });
+
+    // If already flipped (e.g. after re-render), apply flip state
+    if (this._flipped) {
+      const wrapper = $('#review-card-wrapper');
+      if (wrapper) wrapper.classList.add('flipped');
+      btnKnew.disabled = false;
+      btnDidnt.disabled = false;
+    }
+
+    // Show feedback if present
+    if (this._feedback) {
+      this._showFeedback();
+    }
+  },
+
+  flip() {
+    if (!this._currentCard || this._submitting) return;
+    this._flipped = !this._flipped;
+    const wrapper = $('#review-card-wrapper');
+    if (wrapper) {
+      if (this._flipped) {
+        wrapper.classList.add('flipped');
+      } else {
+        wrapper.classList.remove('flipped');
+      }
+    }
+    // Toggle button states
+    const btnKnew = $('#btn-knew');
+    const btnDidnt = $('#btn-didnt-know');
+    if (btnKnew) btnKnew.disabled = !this._flipped;
+    if (btnDidnt) btnDidnt.disabled = !this._flipped;
+  },
+
+  _showFeedback() {
+    const slot = $('#review-feedback-slot');
+    if (!slot || !this._feedback) return;
+    slot.innerHTML = `<div class="feedback-bar ${this._feedback.type}">${this._feedback.text}</div>`;
+  },
+
+  async submitAnswer(result) {
+    if (!this._currentCard || this._submitting) return;
+    this._submitting = true;
+
+    // Disable buttons immediately
+    const btnKnew = $('#btn-knew');
+    const btnDidnt = $('#btn-didnt-know');
+    if (btnKnew) btnKnew.disabled = true;
+    if (btnDidnt) btnDidnt.disabled = true;
+
+    // Particle burst on answer
+    const rect = (result === 'knew' ? btnKnew : btnDidnt)?.getBoundingClientRect();
+    if (rect) {
+      const colors = result === 'knew'
+        ? ['#2ecc71','#27ae60','#00b894']
+        : ['#e74c3c','#c0392b','#f39c12'];
+      Sticky.burstParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, colors, 10);
+    }
+
+    try {
+      const data = await API.post(`/cards/${this._currentCard.id}/check/`, { result });
+      this._reviewed++;
+      if (result === 'knew') this._correct++;
+
+      // Track XP, combo, and local data
+      Sticky.onReviewAnswer(result === 'knew');
+      Sticky.saveReviewLocally(this._currentCard.id, result, this._currentCard.box_number, data.new_box || this._currentCard.box_number);
+
+      this._feedback = {
+        type: result === 'knew' ? 'correct' : 'incorrect',
+        text: data.feedback + (result === 'knew' && Sticky.getCombo() >= 2 ? ` 🔥${Sticky.getCombo()}连对` : '')
+      };
+      this._showFeedback();
+
+      // Check badges after review
+      try {
+        const dashData = State.get('dashboard') || {};
+        const newBadges = Sticky.checkAndUnlockBadges({
+          totalReviews: this._reviewed,
+          todayReviewed: (dashData.today_reviewed || 0) + this._reviewed,
+          streakDays: dashData.streak_days || 0,
+          totalCards: dashData.total_cards || 0,
+        });
+        if (newBadges.length) Sticky.renderBadges(newBadges);
+      } catch {}
+
+      // Short delay then fetch next card
+      setTimeout(async () => {
+        this._flipped = false;
+        this._feedback = null;
+        this._submitting = false;
+        await this._fetchCard();
+      }, 1200);
+    } catch (e) {
+      Toast.error('提交失败: ' + e.message);
+      this._submitting = false;
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Stats Module
+   ═══════════════════════════════════════════════════════ */
+const Stats = {
+  async load() {
+    const dailyChart = $('#daily-chart');
+    const accChart = $('#accuracy-chart');
+    const recordsContainer = $('#records-container');
+
+    dailyChart.innerHTML = '<div style="display:flex;gap:4px;height:100%;align-items:flex-end">' + Array(7).fill('<div class="shimmer" style="flex:1;height:40%;border-radius:4px 4px 0 0"></div>').join('') + '</div>';
+    accChart.innerHTML = dailyChart.innerHTML;
+    recordsContainer.innerHTML = '<div class="shimmer shimmer-line"></div>'.repeat(3);
+
+    try {
+      const [daily, dashboard] = await Promise.all([
+        API.get('/stats/daily/'),
+        API.get('/dashboard/')
+      ]);
+
+      // Render heatmap
+      Sticky.renderHeatmap(daily);
+
+      // Daily Bar Chart
+      const recent = daily.slice(0, 14).reverse();
+      const maxReviewed = Math.max(1, ...recent.map(d => d.cards_reviewed));
+      dailyChart.innerHTML = recent.map(d => {
+        const h = (d.cards_reviewed / maxReviewed * 100).toFixed(1);
+        return `<div class="bar-col">
+          <span class="bar-value">${d.cards_reviewed}</span>
+          <div class="bar-fill" style="height:${h}%;background:linear-gradient(180deg,var(--primary),var(--accent))"></div>
+          <span class="bar-label">${formatDate(d.date)}</span>
+        </div>`;
+      }).join('');
+
+      // Accuracy Chart
+      const maxAcc = 100;
+      accChart.innerHTML = recent.map(d => {
+        const h = (d.accuracy / maxAcc * 100).toFixed(1);
+        const color = d.accuracy >= 80 ? 'var(--success)' : d.accuracy >= 50 ? 'var(--warning)' : 'var(--error)';
+        return `<div class="acc-col">
+          <span class="bar-value">${d.accuracy}%</span>
+          <div class="acc-fill" style="height:${h}%;background:${color}"></div>
+          <span class="bar-label">${formatDate(d.date)}</span>
+        </div>`;
+      }).join('');
+
+      // Records Table
+      const records = dashboard.recent_records || [];
+      if (records.length === 0) {
+        recordsContainer.innerHTML = '<div class="empty-state" style="padding:20px"><p>暂无学习记录</p></div>';
+      } else {
+        let tableHtml = `<table class="records-table">
+          <thead><tr><th>卡片</th><th>结果</th><th>盒子变化</th><th>时间</th></tr></thead>
+          <tbody>`;
+        records.forEach(r => {
+          const resultHtml = r.result === 'knew'
+            ? '<span style="color:var(--success)">✅ 知道</span>'
+            : '<span style="color:var(--error)">❌ 不知道</span>';
+          const boxChange = `Box ${r.from_box} → Box ${r.to_box}`;
+          const time = new Date(r.reviewed_at);
+          const timeStr = `${time.getMonth()+1}/${time.getDate()} ${String(time.getHours()).padStart(2,'0')}:${String(time.getMinutes()).padStart(2,'0')}`;
+          tableHtml += `<tr>
+            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r.card_question)}</td>
+            <td>${resultHtml}</td>
+            <td>${boxChange}</td>
+            <td style="white-space:nowrap;color:var(--text-secondary)">${timeStr}</td>
+          </tr>`;
+        });
+        tableHtml += '</tbody></table>';
+        recordsContainer.innerHTML = tableHtml;
+      }
+    } catch (e) {
+      Toast.error('加载统计失败: ' + e.message);
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   Settings Module
+   ═══════════════════════════════════════════════════════ */
+const Settings = {
+  init() {
+    $('#settings-user').textContent = `当前用户: ${Auth.getUser() || '未知'}`;
+    this._renderAPIUrl();
+
+    $('#btn-edit-api').addEventListener('click', () => this._editAPIUrl());
+    $('#btn-reset-api').addEventListener('click', () => this._resetAPIUrl());
+    $('#btn-import').addEventListener('click', () => this.importCSV());
+    $('#btn-export').addEventListener('click', () => this.exportCSV());
+    $('#btn-logout').addEventListener('click', () => {
+      if (confirm('确定要退出登录吗？')) Auth.logout();
+    });
+  },
+
+  _renderAPIUrl() {
+    const el = $('#settings-api-url');
+    if (el) el.textContent = Config.API_BASE.replace('/api', '');
+  },
+
+  _editAPIUrl() {
+    const current = Config.API_BASE.replace('/api', '');
+    const input = prompt('输入后端 API 地址（不含 /api）:\n例如: https://xxx.natfrp.com 或 http://192.168.1.100:8000', current);
+    if (input === null) return;
+    if (!input.trim()) { Toast.error('地址不能为空'); return; }
+    // Basic validation
+    try {
+      const url = new URL(input.trim());
+      if (!url.protocol.startsWith('http')) { Toast.error('请输入 http:// 或 https:// 地址'); return; }
+    } catch {
+      Toast.error('地址格式不正确');
+      return;
+    }
+    Config.setAPIBase(input.trim());
+    this._renderAPIUrl();
+    Toast.success('API 地址已更新，即将刷新...');
+    setTimeout(() => location.reload(), 800);
+  },
+
+  _resetAPIUrl() {
+    Config.resetAPIBase();
+    Toast.success('已重置为默认地址，即将刷新...');
+    setTimeout(() => location.reload(), 800);
+  },
+
+  importCSV() {
+    const fileInput = $('#csv-file-input');
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      fileInput.value = '';
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const result = await API.upload('/cards/import/', formData);
+        Toast.success(`导入成功！创建了 ${result.created} 张卡片${result.errors.length ? '，' + result.errors.join('; ') : ''}`);
+        // Refresh cards if on cards page
+        if (Router.current === 'cards') App.cards.load();
+      } catch (e) {
+        Toast.error('导入失败: ' + e.message);
+      }
+    };
+    fileInput.click();
+  },
+
+  async exportCSV() {
+    try {
+      Toast.info('正在导出...');
+      await API.download('/cards/export/');
+      Toast.success('导出成功');
+    } catch (e) {
+      Toast.error('导出失败: ' + e.message);
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════
+   App Entry Point
+   ═══════════════════════════════════════════════════════ */
+const App = {
+  router: Router,
+  dashboard: Dashboard,
+  cards: Cards,
+  review: Review,
+  stats: Stats,
+  settings: Settings,
+  sticky: Sticky,
+  theme: Theme,
+
+  init() {
+    // Initialize theme as early as possible
+    Theme.init();
+
+    // Demo mode button
+    const demoBtn = $('#demo-btn');
+    if (demoBtn) {
+      demoBtn.addEventListener('click', () => DemoMode.enter());
+    }
+
+    // Auth tab switching
+    $$('.auth-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        $$('.auth-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const isLogin = tab.dataset.tab === 'login';
+        $('#login-form').style.display = isLogin ? 'block' : 'none';
+        $('#register-form').style.display = isLogin ? 'none' : 'block';
+      });
+    });
+
+    // Login form
+    $('#login-btn').addEventListener('click', async () => {
+      const btn = $('#login-btn');
+      const username = $('#login-username').value.trim();
+      const password = $('#login-password').value;
+      if (!username || !password) { Toast.error('请填写用户名和密码'); return; }
+      btn.disabled = true;
+      btn.textContent = '登录中...';
+      try {
+        await Auth.login(username, password);
+        this._enterApp();
+      } catch (e) {
+        Toast.error(e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登录';
+      }
+    });
+
+    // Register form
+    $('#register-btn').addEventListener('click', async () => {
+      const btn = $('#register-btn');
+      const username = $('#register-username').value.trim();
+      const password = $('#register-password').value;
+      const email = $('#register-email').value.trim();
+      if (!username || !password) { Toast.error('请填写用户名和密码'); return; }
+      if (password.length < 6) { Toast.error('密码至少6位'); return; }
+      btn.disabled = true;
+      btn.textContent = '注册中...';
+      try {
+        await Auth.register(username, password, email);
+        Toast.success('注册成功，正在登录...');
+        await Auth.login(username, password);
+        this._enterApp();
+      } catch (e) {
+        Toast.error(e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '注册';
+      }
+    });
+
+    // Enter key for auth forms
+    ['login-username','login-password'].forEach(id => {
+      $(`#${id}`).addEventListener('keydown', e => {
+        if (e.key === 'Enter') $('#login-btn').click();
+      });
+    });
+    ['register-username','register-email','register-password'].forEach(id => {
+      $(`#${id}`).addEventListener('keydown', e => {
+        if (e.key === 'Enter') $('#register-btn').click();
+      });
+    });
+
+    // Check auth state
+    if (Auth.isLoggedIn()) {
+      this._enterApp();
+    }
+  },
+
+  _enterApp() {
+    $('#auth-page').style.display = 'none';
+    $('#main-app').classList.add('active');
+    Sticky.init();
+    Settings.init();
+    Router.init();
+    ConnStatus.init();
+    // Show demo banner if in demo mode
+    if (DemoMode.isActive()) {
+      const banner = $('#demo-banner');
+      if (banner) banner.style.display = 'flex';
+    }
+  },
+
+  exitDemo() {
+    DemoMode.exit();
+  }
+};
+
+// Start
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+.venv/
+backend/venv/
+backend/db.sqlite3
+node_modules/
+.DS_Store
+Thumbs.db
