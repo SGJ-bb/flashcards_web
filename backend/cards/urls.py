@@ -15,10 +15,14 @@ from .views import (
     CardExportView,
     CardImportView,
     CardListView,
+    CategoryDetailView,
     CategoryListView,
+    ChangePasswordView,
     DailyStatsView,
     DashboardView,
     LoginView,
+    LogoutView,
+    MeView,
     RegisterView,
 )
 
@@ -27,6 +31,10 @@ urlpatterns = [
     path('auth/login/', LoginView.as_view(), name='auth-login'),
     path('auth/register/', RegisterView.as_view(), name='auth-register'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='auth-refresh'),
+    # Auth (authenticated)
+    path('auth/logout/', LogoutView.as_view(), name='auth-logout'),
+    path('auth/me/', MeView.as_view(), name='auth-me'),
+    path('auth/change-password/', ChangePasswordView.as_view(), name='auth-change-password'),
 
     # Dashboard
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
@@ -40,6 +48,7 @@ urlpatterns = [
 
     # Categories
     path('categories/', CategoryListView.as_view(), name='category-list'),
+    path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category-detail'),
 
     # Boxes
     path('boxes/<int:box_num>/check/', BoxCheckView.as_view(), name='box-check'),

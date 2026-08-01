@@ -1,16 +1,52 @@
+# Python
 __pycache__/
 *.py[cod]
-*.sqlite3
-*.db
-venv/
-env/
-.env
+*$py.class
+*.so
 *.egg-info/
+.eggs/
 dist/
 build/
+
+# Virtual environments
+venv/
+env/
 .venv/
 backend/venv/
+backend/.venv/
+
+# Django
+*.sqlite3
+*.db
 backend/db.sqlite3
-node_modules/
+staticfiles/
+media/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.production
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Node (if you add a build step later)
+node_modules/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/

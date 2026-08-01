@@ -2,3 +2,16 @@ Django>=4.0
 djangorestframework>=3.14
 djangorestframework-simplejwt>=5.2
 django-cors-headers>=4.0
+# Optional: load .env file as environment variables in development.
+# Not required if you set env vars via the OS / hosting platform.
+python-dotenv>=1.0
+
+# ─── Production-only dependencies ───────────────────────────────
+# Gunicorn: production WSGI server (used by Render / Heroku / etc.)
+gunicorn>=21.0
+# psycopg2-binary: PostgreSQL driver (used when DATABASE_URL is set)
+psycopg2-binary>=2.9
+# dj-database-url: parse DATABASE_URL env var into Django config
+dj-database-url>=2.0
+# WhiteNoise: serve static files (CSS/JS/admin) in production without nginx
+whitenoise>=6.5
