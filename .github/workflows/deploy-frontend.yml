@@ -1,13 +1,10 @@
 name: Deploy Frontend to GitHub Pages
 
-# Trigger on pushes to main that touch the frontend/ directory,
-# OR when this workflow file itself changes, OR manually.
+# Trigger on any push to main (so Pages stays in sync with the frontend/
+# directory), OR manually from the Actions tab.
 on:
   push:
     branches: [main]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
 # GitHub Pages deployment needs these permissions.
