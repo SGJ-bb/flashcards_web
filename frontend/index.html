@@ -2208,11 +2208,11 @@ input, textarea, select { font-family: inherit; }
         </div>
         <div class="settings-group">
           <div class="settings-item" id="btn-edit-api">
-            <div class="si-left"><span class="si-icon">🌐</span><div><div class="si-label">API 地址</div><div class="si-sub" id="settings-api-url">localhost:8000</div></div></div>
+            <div class="si-left"><span class="si-icon">🌐</span><div><div class="si-label">API 地址</div><div class="si-sub" id="settings-api-url">flashcards-api-sso4.onrender.com</div></div></div>
             <div class="si-right">✏️</div>
           </div>
           <div class="settings-item" id="btn-reset-api">
-            <div class="si-left"><span class="si-icon">🔄</span><div><div class="si-label">重置 API 地址</div><div class="si-sub">恢复为默认 localhost:8000</div></div></div>
+            <div class="si-left"><span class="si-icon">🔄</span><div><div class="si-label">重置 API 地址</div><div class="si-sub">恢复为默认 flashcards-api-sso4.onrender.com</div></div></div>
             <div class="si-right">›</div>
           </div>
         </div>
@@ -2293,7 +2293,7 @@ input, textarea, select { font-family: inherit; }
    API Configuration — dynamic base URL with env detection
    ═══════════════════════════════════════════════════════ */
 const Config = {
-  _defaultBase: 'http://localhost:8000/api',
+  _defaultBase: 'https://flashcards-api-sso4.onrender.com/api',
 
   // Detect deployment environment
   get env() {
@@ -2329,10 +2329,7 @@ const Config = {
       return `${location.origin}/api`;
     }
     // For GitHub Pages / Vercel / Netlify / Cloudflare:
-    // Backend is NOT on the same host. User must configure it.
-    // Return null to signal "demo mode" until configured.
-    const configured = localStorage.getItem('fc_api_configured');
-    if (!configured) return null; // triggers demo mode
+    // Use the production backend by default (Render).
     return this._defaultBase;
   },
 
