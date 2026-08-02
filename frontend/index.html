@@ -281,6 +281,57 @@ input, textarea, select { font-family: inherit; }
    ═══════════════════════════════════════════════════════ */
 #app { min-height: 100vh; position: relative; }
 
+/* ── Ambient animated background blobs ── */
+#app::before, #app::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  animation: blobFloat 20s ease-in-out infinite;
+}
+#app::before {
+  width: 400px; height: 400px;
+  background: var(--primary);
+  top: -100px; left: -100px;
+}
+#app::after {
+  width: 350px; height: 350px;
+  background: var(--accent);
+  bottom: -80px; right: -80px;
+  animation-delay: -10s;
+}
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, 40px) scale(1.1); }
+  66% { transform: translate(-40px, 30px) scale(0.95); }
+}
+[data-theme="light"] #app::before,
+[data-theme="light"] #app::after { opacity: 0.12; }
+
+/* ── Glassmorphism utility ── */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+[data-theme="light"] .glass {
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* ── Page transition animations ── */
+.page.active {
+  animation: pageEnter 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ═══════════════════════════════════════════════════════
    Auth Page
    ═══════════════════════════════════════════════════════ */
@@ -291,8 +342,9 @@ input, textarea, select { font-family: inherit; }
   justify-content: center;
   padding: 20px;
   padding-top: calc(20px + var(--safe-top));
-  background: radial-gradient(ellipse at top, var(--auth-bg-1) 0%, transparent 60%),
-              var(--bg);
+  background: radial-gradient(ellipse at top, var(--auth-bg-1) 0%, transparent 60%);
+  position: relative;
+  z-index: 1;
 }
 .auth-container {
   width: 100%;
@@ -401,13 +453,15 @@ input, textarea, select { font-family: inherit; }
 /* ═══════════════════════════════════════════════════════
    Main Layout
    ═══════════════════════════════════════════════════════ */
-#main-app { display: none; }
+#main-app { display: none; position: relative; z-index: 1; }
 #main-app.active { display: block; }
 .page-content {
   padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 16px);
   max-width: 640px;
   margin: 0 auto;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 .page {
   display: none;
@@ -440,8 +494,8 @@ input, textarea, select { font-family: inherit; }
   height: calc(var(--nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
   background: var(--nav-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
   border-top: 1px solid var(--border);
   display: flex;
   z-index: 100;
@@ -462,19 +516,21 @@ input, textarea, select { font-family: inherit; }
 }
 .nav-item svg { width: 24px; height: 24px; transition: var(--transition); }
 .nav-item.active { color: var(--primary); }
-.nav-item.active svg { transform: translateY(-2px); }
+.nav-item.active svg { transform: translateY(-3px) scale(1.1); filter: drop-shadow(0 4px 8px var(--primary-glow)); }
 .nav-item::before {
   content: '';
   position: absolute;
   top: 0; left: 50%;
   transform: translateX(-50%) scaleX(0);
-  width: 24px; height: 3px;
-  background: var(--primary);
-  border-radius: 0 0 3px 3px;
+  width: 28px; height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 0 0 4px 4px;
   transition: var(--transition-bounce);
+  box-shadow: 0 0 8px var(--primary-glow);
 }
 .nav-item.active::before { transform: translateX(-50%) scaleX(1); }
 .nav-item:hover { color: var(--text-secondary); }
+.nav-item:hover svg { transform: translateY(-2px); }
 
 /* ═══════════════════════════════════════════════════════
    Dashboard
@@ -483,14 +539,14 @@ input, textarea, select { font-family: inherit; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .stat-card {
-  background: var(--surface);
+  background: linear-gradient(145deg, var(--surface), var(--surface-hover));
   border-radius: var(--radius);
   padding: 18px;
   border: 1px solid var(--border);
-  transition: var(--transition);
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease, border-color 0.3s ease;
   position: relative;
   overflow: hidden;
 }
@@ -499,12 +555,27 @@ input, textarea, select { font-family: inherit; }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 3px;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--primary), var(--accent));
   opacity: 0;
   transition: var(--transition);
 }
-.stat-card:hover { border-color: var(--border-active); transform: translateY(-2px); }
+.stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; right: -30px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--primary-dim);
+  opacity: 0;
+  transition: var(--transition);
+}
+.stat-card:hover {
+  border-color: var(--border-active);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.2), 0 0 0 1px var(--primary-dim);
+}
 .stat-card:hover::before { opacity: 1; }
+.stat-card:hover::after { opacity: 1; }
 .stat-card .stat-icon {
   width: 36px; height: 36px;
   border-radius: 10px;
@@ -610,6 +681,196 @@ input, textarea, select { font-family: inherit; }
   overflow: hidden;
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════
+   3D Card Deck Carousel — rotating switch animation
+   ═══════════════════════════════════════════════════════ */
+.card-deck-3d {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  perspective: 1600px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+.card-deck-stage {
+  position: relative;
+  width: 180px;
+  height: 240px;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+}
+.deck-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.7s cubic-bezier(0.34, 1.36, 0.64, 1),
+              opacity 0.5s ease,
+              filter 0.5s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  overflow: hidden;
+  will-change: transform, opacity;
+}
+.deck-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 55%);
+  pointer-events: none;
+  border-radius: 18px;
+}
+/* Position classes — each card rotates into the center slot */
+.deck-card.pos-center {
+  transform: translateX(0) translateZ(60px) rotateY(0deg) scale(1.08);
+  opacity: 1;
+  z-index: 10;
+  filter: brightness(1);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.1);
+}
+.deck-card.pos-left-1 {
+  transform: translateX(-130px) translateZ(0) rotateY(35deg) scale(0.9);
+  opacity: 0.85;
+  z-index: 8;
+  filter: brightness(0.7);
+}
+.deck-card.pos-right-1 {
+  transform: translateX(130px) translateZ(0) rotateY(-35deg) scale(0.9);
+  opacity: 0.85;
+  z-index: 8;
+  filter: brightness(0.7);
+}
+.deck-card.pos-left-2 {
+  transform: translateX(-220px) translateZ(-80px) rotateY(55deg) scale(0.78);
+  opacity: 0.5;
+  z-index: 5;
+  filter: brightness(0.45) blur(1px);
+}
+.deck-card.pos-right-2 {
+  transform: translateX(220px) translateZ(-80px) rotateY(-55deg) scale(0.78);
+  opacity: 0.5;
+  z-index: 5;
+  filter: brightness(0.45) blur(1px);
+}
+.deck-card.pos-hidden {
+  transform: translateX(0) translateZ(-200px) rotateY(0deg) scale(0.6);
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+/* Enter animation when first card reaches center */
+.deck-card.pos-center .deck-card-inner {
+  animation: deckCardEnter 0.7s cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+@keyframes deckCardEnter {
+  0% { transform: translateY(10px); opacity: 0.6; }
+  60% { transform: translateY(-4px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.deck-card .box-tag {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: auto;
+  backdrop-filter: blur(4px);
+}
+.deck-card .card-q {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.deck-card .card-tap {
+  font-size: 10px;
+  color: rgba(255,255,255,0.7);
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.deck-card .card-tap::after {
+  content: '→';
+  animation: tapArrow 1.5s ease-in-out infinite;
+}
+@keyframes tapArrow {
+  0%, 100% { transform: translateX(0); opacity: 0.7; }
+  50% { transform: translateX(4px); opacity: 1; }
+}
+
+/* Deck controls */
+.deck-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.deck-nav-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  font-size: 18px;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.deck-nav-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px var(--primary-glow);
+}
+.deck-nav-btn:active { transform: scale(0.92); }
+.deck-dots {
+  display: flex;
+  gap: 6px;
+}
+.deck-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--border-active);
+  transition: var(--transition);
+  cursor: pointer;
+}
+.deck-dot.active {
+  background: var(--primary);
+  width: 20px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px var(--primary-glow);
+}
+.deck-counter {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}
+@media (max-width: 479px) {
+  .card-deck-3d { height: 220px; }
+  .card-deck-stage { width: 160px; height: 220px; }
+  .deck-card.pos-left-1 { transform: translateX(-110px) translateZ(0) rotateY(35deg) scale(0.88); }
+  .deck-card.pos-right-1 { transform: translateX(110px) translateZ(0) rotateY(-35deg) scale(0.88); }
+  .deck-card.pos-left-2 { transform: translateX(-180px) translateZ(-80px) rotateY(55deg) scale(0.75); }
+  .deck-card.pos-right-2 { transform: translateX(180px) translateZ(-80px) rotateY(-55deg) scale(0.75); }
+}
 .hand-card::before {
   content: '';
   position: absolute;
@@ -651,23 +912,35 @@ input, textarea, select { font-family: inherit; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .quick-action-btn {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: var(--surface);
+  background: linear-gradient(145deg, var(--surface), var(--surface-hover));
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.quick-action-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary-dim), transparent);
+  opacity: 0;
   transition: var(--transition);
 }
 .quick-action-btn:hover {
   border-color: var(--border-active);
-  background: var(--surface-hover);
-  transform: translateY(-2px);
+  transform: translateX(4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
 }
+.quick-action-btn:hover::before { opacity: 1; }
+.quick-action-btn:active { transform: scale(0.97); }
 .quick-action-btn .qa-icon {
   width: 40px; height: 40px;
   border-radius: 12px;
@@ -841,6 +1114,253 @@ input, textarea, select { font-family: inherit; }
 .empty-state p {
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+/* ── 3D Rotating Card (Empty State) — fully interactive ── */
+.flip-card-3d {
+  perspective: 1400px;
+  width: 220px;
+  height: 300px;
+  margin: 24px auto;
+  cursor: pointer;
+  position: relative;
+}
+.flip-card-3d::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle at center, var(--primary-glow), transparent 70%);
+  opacity: 0.6;
+  z-index: -1;
+  animation: cardPulse 3s ease-in-out infinite;
+}
+.flip-card-3d-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+  transform-style: preserve-3d;
+  animation: cardAutoRotate 6s ease-in-out infinite;
+}
+/* Auto-rotate to showcase 3D — pauses on hover/touch */
+.flip-card-3d:hover .flip-card-3d-inner,
+.flip-card-3d.flipped .flip-card-3d-inner {
+  animation-play-state: paused;
+}
+.flip-card-3d:hover .flip-card-3d-inner {
+  transform: rotateY(180deg) rotateX(8deg) scale(1.05);
+}
+/* Click-to-flip (for mobile/touch) */
+.flip-card-3d.flipped .flip-card-3d-inner {
+  transform: rotateY(180deg) rotateX(8deg) scale(1.05);
+}
+.flip-card-3d-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+.flip-card-3d-front {
+  background: linear-gradient(145deg, var(--surface), var(--surface-hover));
+  border: 1px solid var(--border);
+  gap: 18px;
+}
+.flip-card-3d-front::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%);
+  animation: cardShimmer 4s ease-in-out infinite;
+}
+.flip-card-3d-front .flip-icon {
+  font-size: 56px;
+  animation: floatCard 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px var(--primary-glow));
+}
+.flip-card-3d-front .flip-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  z-index: 1;
+}
+.flip-card-3d-front .flip-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.flip-card-3d-front .flip-hint::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: hintPulse 1.5s ease-in-out infinite;
+}
+.flip-card-3d-back {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  transform: rotateY(180deg);
+  gap: 14px;
+  color: white;
+}
+.flip-card-3d-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), transparent 60%);
+}
+.flip-card-3d-back .flip-icon-back {
+  font-size: 42px;
+  opacity: 0.95;
+  animation: spinIcon 4s linear infinite;
+  z-index: 1;
+}
+.flip-card-3d-back .flip-label-back {
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  z-index: 1;
+}
+.flip-card-3d-back .flip-sub-back {
+  font-size: 13px;
+  opacity: 0.85;
+  text-align: center;
+  z-index: 1;
+}
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0) rotateZ(0deg); }
+  33% { transform: translateY(-10px) rotateZ(-3deg); }
+  66% { transform: translateY(-5px) rotateZ(3deg); }
+}
+@keyframes cardAutoRotate {
+  0%, 100% { transform: rotateY(0deg) rotateX(0deg); }
+  25% { transform: rotateY(-15deg) rotateX(5deg); }
+  50% { transform: rotateY(0deg) rotateX(0deg); }
+  75% { transform: rotateY(15deg) rotateX(-5deg); }
+}
+@keyframes cardShimmer {
+  0%, 100% { transform: translateX(-30%) translateY(-30%); }
+  50% { transform: translateX(30%) translateY(30%); }
+}
+@keyframes cardPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.95); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+@keyframes spinIcon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Interactive Micro-animations ── */
+.stat-card, .quick-action-btn, .box-bar-row, .achievement-badge {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease;
+}
+.stat-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px var(--primary-glow);
+}
+.quick-action-btn:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+.quick-action-btn:active {
+  transform: scale(0.97);
+}
+.box-bar-row:hover {
+  transform: scale(1.02);
+}
+.box-bar-row:hover .box-bar-fill {
+  filter: brightness(1.15);
+}
+.achievement-badge {
+  cursor: default;
+}
+.achievement-badge:hover {
+  transform: translateY(-4px) scale(1.1);
+}
+.achievement-badge.locked:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* Ripple effect for buttons */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.ripple-btn:active::after {
+  opacity: 1;
+}
+
+/* Shimmer enhanced for stat cards */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: conic-gradient(from 0deg at 50% 50%, transparent 0%, rgba(255,255,255,0.03) 25%, transparent 50%);
+  animation: shimmerRotate 6s linear infinite;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.stat-card:hover::before {
+  opacity: 1;
+}
+@keyframes shimmerRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Staggered entrance animation for dashboard items */
+.stagger-item {
+  animation: staggerSlideUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes staggerSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Pulse glow on streak flame */
+.streak-widget.active .streak-flame-body {
+  animation: flamePulse 0.8s ease-in-out infinite, flameGlow 2s ease-in-out infinite;
+}
+@keyframes flameGlow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(243,156,18,0.5)); }
+  50% { filter: drop-shadow(0 0 16px rgba(243,156,18,0.8)) drop-shadow(0 0 32px rgba(231,76,60,0.4)); }
+}
+
+/* Smooth scrollbar for hand cards */
+.card-hand-scroll {
+  scroll-behavior: smooth;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1367,13 +1887,22 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 16px;
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--surface), var(--surface-hover));
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
-  margin-bottom: 24px;
+  padding: 20px;
+  margin-bottom: 16px;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.streak-widget::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 15% 50%, rgba(243,156,18,0.08), transparent 50%);
+  pointer-events: none;
 }
 .streak-widget.active { animation: streakGlow 2s infinite; }
 .streak-flame {
@@ -1382,31 +1911,17 @@ input, textarea, select { font-family: inherit; }
   height: 60px;
   flex-shrink: 0;
 }
-.streak-flame-body {
-  position: absolute;
-  bottom: 0; left: 50%;
-  transform: translateX(-50%);
-  width: 32px; height: 44px;
-  background: linear-gradient(0deg, #e74c3c 0%, #f39c12 40%, #f1c40f 70%, transparent 100%);
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  animation: flamePulse 0.8s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px rgba(243,156,18,0.5));
+.streak-flame-svg {
+  display: block;
+  filter: drop-shadow(0 0 8px rgba(243,156,18,0.6));
+  animation: flameSway 3s ease-in-out infinite;
 }
-.streak-flame-inner {
-  position: absolute;
-  bottom: 2px; left: 50%;
-  transform: translateX(-50%);
-  width: 16px; height: 28px;
-  background: linear-gradient(0deg, #f39c12 0%, #f1c40f 50%, transparent 100%);
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  animation: flameFlicker 0.6s ease-in-out infinite;
+.streak-widget.active .streak-flame-svg {
+  filter: drop-shadow(0 0 12px rgba(243,156,18,0.8)) drop-shadow(0 0 24px rgba(231,76,60,0.4));
 }
-.streak-flame-spark {
-  position: absolute;
-  width: 4px; height: 4px;
-  background: #f1c40f;
-  border-radius: 50%;
-  animation: flameFlicker 0.4s ease-in-out infinite;
+@keyframes flameSway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
 }
 .streak-info { flex: 1; }
 .streak-count {
@@ -1434,14 +1949,25 @@ input, textarea, select { font-family: inherit; }
    Daily Goal Progress Ring
    ═══════════════════════════════════════════════════════ */
 .goal-widget {
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--surface), var(--surface-hover));
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
-  margin-bottom: 24px;
+  padding: 20px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 18px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.goal-widget::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 85% 50%, var(--primary-dim), transparent 50%);
+  pointer-events: none;
 }
 .goal-ring-container {
   position: relative;
@@ -2133,10 +2659,66 @@ input, textarea, select { font-family: inherit; }
         <!-- Streak Flame Widget -->
         <div class="streak-widget" id="streak-widget">
           <div class="streak-flame" id="streak-flame">
-            <div class="streak-flame-body"></div>
-            <div class="streak-flame-inner"></div>
-            <div class="streak-flame-spark" style="top:2px;left:8px;animation-delay:-0.1s"></div>
-            <div class="streak-flame-spark" style="top:6px;right:6px;animation-delay:-0.3s"></div>
+            <svg viewBox="0 0 48 64" width="48" height="64" class="streak-flame-svg">
+              <defs>
+                <!-- Gradient: bright white-yellow at BASE (bottom), red-orange at TIP (top) -->
+                <linearGradient id="flameGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fff9c4"/>
+                  <stop offset="25%" stop-color="#ffeb3b"/>
+                  <stop offset="55%" stop-color="#ff9800"/>
+                  <stop offset="85%" stop-color="#f4511e"/>
+                  <stop offset="100%" stop-color="#c62828"/>
+                </linearGradient>
+                <linearGradient id="flameInner" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fff9c4"/>
+                  <stop offset="40%" stop-color="#ffeb3b"/>
+                  <stop offset="80%" stop-color="#ff9800"/>
+                  <stop offset="100%" stop-color="#f4511e"/>
+                </linearGradient>
+                <radialGradient id="flameGlow" cx="50%" cy="80%" r="50%">
+                  <stop offset="0%" stop-color="#ffeb3b" stop-opacity="0.6"/>
+                  <stop offset="100%" stop-color="#ffeb3b" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <!-- Outer glow halo -->
+              <ellipse cx="24" cy="52" rx="20" ry="12" fill="url(#flameGlow)" opacity="0.7"/>
+              <!-- Outer flame: pointed TIP at top (y=2), wide ROUNDED base at bottom (y=60) -->
+              <path class="flame-outer" d="M24 2 C16 6 10 14 8 24 C6 34 8 44 14 52 C18 57 22 60 24 61 C26 60 30 57 34 52 C40 44 42 34 40 24 C38 14 32 6 24 2Z" fill="url(#flameGrad)" opacity="0.95">
+                <animate attributeName="d" dur="1.2s" repeatCount="indefinite" values="
+                  M24 2 C16 6 10 14 8 24 C6 34 8 44 14 52 C18 57 22 60 24 61 C26 60 30 57 34 52 C40 44 42 34 40 24 C38 14 32 6 24 2Z;
+                  M24 3 C15 7 9 15 7 25 C5 35 9 43 15 51 C19 56 22 59 24 60 C26 59 29 56 33 51 C39 43 43 35 41 25 C39 15 33 7 24 3Z;
+                  M24 2 C17 6 11 14 9 24 C7 34 7 45 13 53 C17 58 22 61 24 62 C26 61 31 58 35 53 C41 45 41 34 39 24 C37 14 31 6 24 2Z;
+                  M24 2 C16 6 10 14 8 24 C6 34 8 44 14 52 C18 57 22 60 24 61 C26 60 30 57 34 52 C40 44 42 34 40 24 C38 14 32 6 24 2Z"/>
+              </path>
+              <!-- Inner flame: brighter core -->
+              <path class="flame-inner" d="M24 10 C19 14 15 20 14 28 C13 36 16 43 20 49 C22 52 23 54 24 55 C25 54 26 52 28 49 C32 43 35 36 34 28 C33 20 29 14 24 10Z" fill="url(#flameInner)" opacity="0.9">
+                <animate attributeName="d" dur="0.9s" repeatCount="indefinite" values="
+                  M24 10 C19 14 15 20 14 28 C13 36 16 43 20 49 C22 52 23 54 24 55 C25 54 26 52 28 49 C32 43 35 36 34 28 C33 20 29 14 24 10Z;
+                  M24 12 C20 16 16 22 15 29 C14 37 17 42 21 48 C22 51 23 53 24 54 C25 53 26 51 27 48 C31 42 34 37 33 29 C32 22 28 16 24 12Z;
+                  M24 10 C19 14 15 20 14 28 C13 36 16 43 20 49 C22 52 23 54 24 55 C25 54 26 52 28 49 C32 43 35 36 34 28 C33 20 29 14 24 10Z"/>
+              </path>
+              <!-- Blue base core (hottest part) -->
+              <ellipse cx="24" cy="50" rx="6" ry="8" fill="#81d4fa" opacity="0.6">
+                <animate attributeName="ry" dur="0.7s" repeatCount="indefinite" values="8;6;8"/>
+                <animate attributeName="opacity" dur="0.7s" repeatCount="indefinite" values="0.6;0.4;0.6"/>
+              </ellipse>
+              <!-- Rising sparks -->
+              <circle cx="21" cy="20" r="1.5" fill="#ffeb3b" opacity="0">
+                <animate attributeName="cy" dur="1.5s" repeatCount="indefinite" values="45;5"/>
+                <animate attributeName="opacity" dur="1.5s" repeatCount="indefinite" values="0;0.9;0"/>
+                <animate attributeName="r" dur="1.5s" repeatCount="indefinite" values="1.5;0.5"/>
+              </circle>
+              <circle cx="27" cy="20" r="1" fill="#fff9c4" opacity="0">
+                <animate attributeName="cy" dur="1.8s" repeatCount="indefinite" values="42;3"/>
+                <animate attributeName="opacity" dur="1.8s" repeatCount="indefinite" values="0;0.8;0"/>
+                <animate attributeName="r" dur="1.8s" repeatCount="indefinite" values="1.2;0.3"/>
+              </circle>
+              <circle cx="24" cy="20" r="0.8" fill="#ff9800" opacity="0">
+                <animate attributeName="cy" dur="2s" repeatCount="indefinite" values="38;2"/>
+                <animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="0;0.7;0"/>
+                <animate attributeName="r" dur="2s" repeatCount="indefinite" values="1;0.2"/>
+              </circle>
+            </svg>
           </div>
           <div class="streak-info">
             <div class="streak-count" id="streak-count">0</div>
@@ -2180,11 +2762,11 @@ input, textarea, select { font-family: inherit; }
         <div class="card-hand-container" id="card-hand-container"></div>
         <div class="section-title"><span class="emoji">⚡</span> 快捷操作</div>
         <div class="quick-actions">
-          <button class="quick-action-btn" onclick="App.router.navigate('review')">
+          <button class="quick-action-btn ripple-btn" onclick="App.router.navigate('review')">
             <div class="qa-icon" style="background:rgba(46,204,113,0.15);color:var(--success)">📖</div>
             <div><div class="qa-text">开始复习</div><div class="qa-sub">Leitner 系统</div></div>
           </button>
-          <button class="quick-action-btn" onclick="App.cards.showAddModal()">
+          <button class="quick-action-btn ripple-btn" onclick="App.cards.showAddModal()">
             <div class="qa-icon" style="background:rgba(108,92,231,0.15);color:var(--primary)">➕</div>
             <div><div class="qa-text">添加卡片</div><div class="qa-sub">新建闪卡</div></div>
           </button>
@@ -2379,18 +2961,8 @@ const Config = {
     const saved = localStorage.getItem('fc_api_base');
     if (saved) return saved;
 
-    // Auto-detect based on environment
-    const env = this.env;
-    if (env === 'local') {
-      // Local dev: assume backend on same host port 8000
-      return `http://${location.hostname}:8000/api`;
-    }
-    if (env === 'frp') {
-      // FRP tunnel: backend likely on same host (the tunnel target)
-      return `${location.origin}/api`;
-    }
-    // For GitHub Pages / Vercel / Netlify / Cloudflare:
-    // Use the production backend by default (Render).
+    // Always use the production backend (Render) by default.
+    // For local dev, override with ?api=http://localhost:8000
     return this._defaultBase;
   },
 
@@ -2866,7 +3438,35 @@ const Auth = {
    API Module — fetch wrapper with JWT & refresh
    ═══════════════════════════════════════════════════════ */
 const API = {
-  async request(path, options = {}) {
+  _wakePromise: null,
+
+  // Fetch with timeout — Render free tier can take ~10s to wake from sleep
+  async _fetchWithTimeout(url, options, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
+  // Wake up the sleeping backend (Render free tier spins down after 15min)
+  async wakeBackend() {
+    if (this._wakePromise) return this._wakePromise;
+    this._wakePromise = (async () => {
+      try {
+        await this._fetchWithTimeout(
+          `${Config.API_BASE.replace('/api', '')}/api/health/`,
+          { method: 'GET' },
+          20000
+        ).catch(() => {});
+      } catch {}
+    })();
+    return this._wakePromise;
+  },
+
+  async request(path, options = {}, retries = 2) {
     if (!Config.API_BASE) {
       throw new Error('后端未配置，请进入设置配置 API 地址');
     }
@@ -2877,13 +3477,42 @@ const API = {
       headers['Content-Type'] = headers['Content-Type'] || 'application/json';
     }
 
-    let res = await fetch(`${Config.API_BASE}${path}`, { ...options, headers });
+    let res;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        res = await this._fetchWithTimeout(
+          `${Config.API_BASE}${path}`,
+          { ...options, headers },
+          15000
+        );
+        // Success — return immediately
+        if (res.status !== 401) break;
 
-    if (res.status === 401 && token) {
-      const newToken = await Auth.refreshAccessToken();
-      if (newToken) {
-        headers['Authorization'] = `Bearer ${newToken}`;
-        res = await fetch(`${Config.API_BASE}${path}`, { ...options, headers });
+        // 401 — try token refresh
+        if (token) {
+          const newToken = await Auth.refreshAccessToken();
+          if (newToken) {
+            headers['Authorization'] = `Bearer ${newToken}`;
+            res = await this._fetchWithTimeout(
+              `${Config.API_BASE}${path}`,
+              { ...options, headers },
+              15000
+            );
+          }
+        }
+        break;
+      } catch (err) {
+        // Network error or timeout — retry with backoff
+        if (attempt < retries) {
+          const wait = (attempt + 1) * 1500; // 1.5s, 3s
+          await new Promise(r => setTimeout(r, wait));
+          continue;
+        }
+        // All retries exhausted — provide friendly error
+        if (err.name === 'AbortError') {
+          throw new Error('后端响应超时（可能正在唤醒，请稍后重试）');
+        }
+        throw new Error('无法连接后端服务（网络错误或服务休眠）');
       }
     }
     return res;
@@ -3365,28 +3994,240 @@ const Dashboard = {
 
       // Card Hand
       if (data.total_cards === 0) {
-        handContainer.innerHTML = `
-          <div class="empty-state" style="padding:30px 0">
-            <div class="empty-icon">🃏</div>
-            <h3>还没有卡片</h3>
-            <p>快去添加第一张闪卡吧！</p>
-          </div>`;
+        handContainer.innerHTML = this._emptyCardHTML();
       } else {
         const cards = await API.get('/cards/');
         const shown = cards.slice(0, 10);
-        handContainer.innerHTML = `<div class="card-hand-scroll">${shown.map((c, i) => {
-          const color = boxColor(c.box_number);
-          return `<div class="hand-card stagger-item" style="background:linear-gradient(135deg,${color}e6,${color}99);box-shadow:0 6px 20px ${color}44;animation-delay:${i * 0.05}s" onclick="App.cards.showDetail(${c.id})">
-            <span class="box-tag">Box ${c.box_number}</span>
-            <div class="card-q">${escapeHtml(c.question)}</div>
-            <div class="card-tap">点击查看 →</div>
-          </div>`;
-        }).join('')}</div>`;
+        handContainer.innerHTML = this._renderDeck(shown);
+        this._initDeck(shown);
       }
     } catch (e) {
-      Toast.error('加载仪表盘失败: ' + e.message);
-      grid.innerHTML = '<div class="empty-state"><p>加载失败，请下拉刷新</p></div>';
+      console.warn('Dashboard load error:', e);
+      // Graceful degradation: show 3D card + demo stats instead of scary error
+      this._renderFallback(grid, boxDist, handContainer, greeting, e);
     }
+  },
+
+  // ─── 3D Card Deck Carousel ───
+  _deckState: { cards: [], current: 0, timer: null, paused: false },
+
+  _renderDeck(cards) {
+    this._deckState.cards = cards;
+    this._deckState.current = 0;
+    const dots = cards.map((_, i) =>
+      `<div class="deck-dot${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="Dashboard._goToDeck(${i})"></div>`
+    ).join('');
+    return `
+      <div class="card-deck-3d" id="card-deck-3d">
+        <div class="card-deck-stage" id="card-deck-stage">
+          ${cards.map((c, i) => {
+            const color = boxColor(c.box_number);
+            return `<div class="deck-card" data-idx="${i}" data-id="${c.id}"
+              style="background:linear-gradient(135deg,${color}e6,${color}99)"
+              onclick="Dashboard._deckClick(${i})">
+              <span class="box-tag">Box ${c.box_number}</span>
+              <div class="card-q">${escapeHtml(c.question)}</div>
+              <div class="card-tap">点击查看</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="deck-controls">
+        <button class="deck-nav-btn" onclick="Dashboard._prevDeck()" aria-label="上一张">‹</button>
+        <div class="deck-dots">${dots}</div>
+        <span class="deck-counter" id="deck-counter">1 / ${cards.length}</span>
+        <button class="deck-nav-btn" onclick="Dashboard._nextDeck()" aria-label="下一张">›</button>
+      </div>`;
+  },
+
+  _initDeck(cards) {
+    this._deckState.cards = cards;
+    this._deckState.current = 0;
+    this._updateDeck();
+    // Auto-advance every 3.5s
+    this._startDeckAuto();
+    // Pause on hover
+    const deck = $('#card-deck-3d');
+    if (deck) {
+      deck.addEventListener('mouseenter', () => this._stopDeckAuto());
+      deck.addEventListener('mouseleave', () => this._startDeckAuto());
+      // Touch swipe
+      let startX = 0;
+      deck.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+      deck.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > 40) {
+          if (dx > 0) this._prevDeck(); else this._nextDeck();
+        }
+      }, { passive: true });
+    }
+  },
+
+  _startDeckAuto() {
+    this._stopDeckAuto();
+    if (this._deckState.cards.length <= 1) return;
+    this._deckState.timer = setInterval(() => {
+      if (!this._deckState.paused) this._nextDeck();
+    }, 3500);
+  },
+
+  _stopDeckAuto() {
+    if (this._deckState.timer) {
+      clearInterval(this._deckState.timer);
+      this._deckState.timer = null;
+    }
+  },
+
+  _nextDeck() {
+    const len = this._deckState.cards.length;
+    if (len === 0) return;
+    this._deckState.current = (this._deckState.current + 1) % len;
+    this._updateDeck();
+  },
+
+  _prevDeck() {
+    const len = this._deckState.cards.length;
+    if (len === 0) return;
+    this._deckState.current = (this._deckState.current - 1 + len) % len;
+    this._updateDeck();
+  },
+
+  _goToDeck(idx) {
+    if (idx < 0 || idx >= this._deckState.cards.length) return;
+    this._deckState.current = idx;
+    this._updateDeck();
+    this._startDeckAuto(); // restart timer
+  },
+
+  _updateDeck() {
+    const stage = $('#card-deck-stage');
+    if (!stage) return;
+    const cards = stage.querySelectorAll('.deck-card');
+    const cur = this._deckState.current;
+    const len = cards.length;
+    cards.forEach((card, i) => {
+      let pos = i - cur;
+      // Normalize to shortest path around the circle
+      if (pos > len / 2) pos -= len;
+      if (pos < -len / 2) pos += len;
+      card.classList.remove('pos-center', 'pos-left-1', 'pos-right-1', 'pos-left-2', 'pos-right-2', 'pos-hidden');
+      if (pos === 0) card.classList.add('pos-center');
+      else if (pos === -1) card.classList.add('pos-left-1');
+      else if (pos === 1) card.classList.add('pos-right-1');
+      else if (pos === -2) card.classList.add('pos-left-2');
+      else if (pos === 2) card.classList.add('pos-right-2');
+      else card.classList.add('pos-hidden');
+    });
+    // Update dots
+    $$('.deck-dot').forEach((d, i) => d.classList.toggle('active', i === cur));
+    const counter = $('#deck-counter');
+    if (counter) counter.textContent = `${cur + 1} / ${len}`;
+  },
+
+  _deckClick(idx) {
+    if (idx === this._deckState.current) {
+      // Center card → open detail
+      const card = this._deckState.cards[idx];
+      if (card) App.cards.showDetail(card.id);
+    } else {
+      // Side card → bring to center
+      this._goToDeck(idx);
+    }
+  },
+
+  // 3D interactive empty-state card HTML
+  _emptyCardHTML() {
+    return `
+      <div class="flip-card-3d" onclick="Dashboard.cardClick(this)">
+        <div class="flip-card-3d-inner">
+          <div class="flip-card-3d-face flip-card-3d-front">
+            <div class="flip-icon">🃏</div>
+            <div class="flip-label">点击创建卡片</div>
+            <div class="flip-hint">悬停翻转 · 点击创建</div>
+          </div>
+          <div class="flip-card-3d-face flip-card-3d-back">
+            <div class="flip-icon-back">✨</div>
+            <div class="flip-label-back">创建你的第一张闪卡</div>
+            <div class="flip-sub-back">开始你的学习之旅</div>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  // Card click handler: flip on first tap (mobile), open modal on second tap or desktop click
+  cardClick(el) {
+    // On desktop (hover flips the card), always open modal
+    if (window.matchMedia('(hover: hover)').matches) {
+      App.cards.showAddModal();
+      return;
+    }
+    // On mobile: first tap flips, second tap opens modal
+    if (!el.classList.contains('flipped')) {
+      el.classList.add('flipped');
+      // Auto-unflip after 3 seconds
+      setTimeout(() => el.classList.remove('flipped'), 3000);
+    } else {
+      el.classList.remove('flipped');
+      App.cards.showAddModal();
+    }
+  },
+
+  // Fallback renderer when API is unreachable — shows demo data + 3D card
+  _renderFallback(grid, boxDist, handContainer, greeting, err) {
+    const isNetworkErr = err.message.includes('网络') || err.message.includes('超时') || err.message.includes('Failed to fetch');
+    const msg = isNetworkErr
+      ? '后端服务休眠中，已切换演示数据'
+      : '加载失败，显示示例数据';
+    Toast.info(msg + ' · 点击右上角连接后端');
+
+    greeting.textContent = '演示模式 · 示例数据 🎮';
+
+    // Show demo stats
+    const demo = DemoMode.SAMPLE_DASHBOARD;
+    const stats = [
+      { icon: '🃏', value: demo.total_cards, label: '总卡片', color: 'var(--primary)', bg: 'var(--primary-dim)' },
+      { icon: '📝', value: demo.today_reviewed, label: '今日复习', color: 'var(--accent)', bg: 'rgba(0,184,148,0.12)' },
+      { icon: '🎯', value: demo.today_accuracy + '%', label: '正确率', color: 'var(--success)', bg: 'rgba(46,204,113,0.12)' },
+      { icon: '🔥', value: demo.streak_days, label: '连续天数', color: 'var(--warning)', bg: 'rgba(243,156,18,0.12)' },
+    ];
+    grid.innerHTML = stats.map((s, i) => `
+      <div class="stat-card stagger-item" style="animation-delay:${i * 0.08}s;opacity:0.85">
+        <div class="stat-icon" style="background:${s.bg};color:${s.color}">${s.icon}</div>
+        <div class="stat-value stat-value-animated" style="animation-delay:${i * 0.08 + 0.1}s">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    `).join('');
+
+    // Show demo box distribution
+    const maxCount = Math.max(1, ...Object.values(demo.cards_by_box));
+    boxDist.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const count = demo.cards_by_box[String(i)] || 0;
+      const pct = (count / maxCount * 100).toFixed(1);
+      const color = boxColor(i);
+      boxDist.innerHTML += `
+        <div class="box-bar-row stagger-item" style="animation-delay:${(i-1) * 0.06}s;opacity:0.85">
+          <span class="box-label" style="color:${color}">Box ${i}</span>
+          <div class="box-bar-track">
+            <div class="box-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${color},${color}cc)">
+              <span>${count}</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // Show 3D card
+    if (handContainer) {
+      handContainer.innerHTML = this._emptyCardHTML();
+    }
+
+    // Update streak flame with demo data
+    Sticky.updateStreak(demo.streak_days, demo.today_reviewed);
+    Sticky.updateGoalRing(demo.today_reviewed);
+
+    // Show demo banner
+    const banner = $('#demo-banner');
+    if (banner) banner.style.display = 'flex';
   }
 };
 
@@ -3668,7 +4509,7 @@ const Cards = {
         <div style="font-size:16px;font-weight:600;line-height:1.5;color:var(--success)">${escapeHtml(card.answer)}</div>
       </div>
       <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:8px">
-        创建: ${formatDateFull(card.date_created)} ${card.last_reviewed ? '| 最近复习: ' + formatDateFull(card.last_reviewed) : ''}
+        创建: ${formatDateFull(card.date_created || card.created_at)} ${card.last_reviewed ? '| 最近复习: ' + formatDateFull(card.last_reviewed) : ''}
       </div>
       <div class="modal-actions">
         <button class="btn-modal secondary" onclick="Modal.close()">关闭</button>
@@ -4179,6 +5020,10 @@ const App = {
     Settings.init();
     Router.init();
     ConnStatus.init();
+    // Wake up the sleeping backend (Render free tier) in the background
+    if (!DemoMode.isActive()) {
+      API.wakeBackend();
+    }
     // Show demo banner if in demo mode
     if (DemoMode.isActive()) {
       const banner = $('#demo-banner');
