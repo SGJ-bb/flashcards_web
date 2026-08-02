@@ -80,7 +80,7 @@ ROOT_URLCONF = 'flashcards_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'frontend'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -223,6 +223,8 @@ else:
             'http://127.0.0.1:5500',
             'http://localhost:8000',
             'http://127.0.0.1:8000',
+            'https://flashcards-api-sso4.onrender.com',
+            'https://sgj-bb.github.io',
             'null',  # file:// pages send origin "null"
         ]
     CORS_ALLOW_CREDENTIALS = True
