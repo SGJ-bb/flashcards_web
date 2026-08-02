@@ -1670,6 +1670,32 @@ input, textarea, select { font-family: inherit; }
 .settings-item .si-right { color: var(--text-dim); font-size: 14px; }
 .settings-item.danger .si-label { color: var(--error); }
 
+/* Category Manager */
+.category-manager-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+}
+.category-manager-item:hover { background: var(--surface-hover); }
+.category-manager-item + .category-manager-item { margin-top: 4px; }
+.category-manager-name { flex: 1; font-size: 14px; font-weight: 500; }
+.category-manager-count { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+.category-manager-actions { display: flex; gap: 4px; }
+.cat-btn {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: var(--radius-xs);
+  transition: var(--transition-fast);
+  opacity: 0.6;
+}
+.cat-btn:hover { opacity: 1; background: var(--surface-hover); }
+
 /* ═══════════════════════════════════════════════════════
    Modal
    ═══════════════════════════════════════════════════════ */
@@ -2851,11 +2877,18 @@ input, textarea, select { font-family: inherit; }
         </div>
         <div class="settings-group">
           <div class="settings-item" id="btn-edit-api">
-            <div class="si-left"><span class="si-icon">🌐</span><div><div class="si-label">API 地址</div><div class="si-sub" id="settings-api-url">flashcards-api-sso4.onrender.com</div></div></div>
-            <div class="si-right">✏️</div>
+            <div class="si-left"><span class="si-icon">🌐</span><div><div class="si-label">后端连接</div><div class="si-sub" id="settings-api-url">已配置</div></div></div>
+            <div class="si-right" id="settings-api-toggle" style="cursor:pointer;user-select:none">👁️</div>
           </div>
-          <div class="settings-item" id="btn-reset-api">
-            <div class="si-left"><span class="si-icon">🔄</span><div><div class="si-label">重置 API 地址</div><div class="si-sub">恢复为默认 flashcards-api-sso4.onrender.com</div></div></div>
+          <div class="settings-item" id="btn-reset-api" style="display:none">
+            <div class="si-left"><span class="si-icon">🔄</span><div><div class="si-label">重置 API 地址</div><div class="si-sub">恢复为默认地址</div></div></div>
+            <div class="si-right">›</div>
+          </div>
+        </div>
+        <div class="section-title"><span class="emoji">🏷️</span> 分类管理</div>
+        <div class="settings-group">
+          <div class="settings-item" id="btn-manage-categories">
+            <div class="si-left"><span class="si-icon">📂</span><div><div class="si-label">自定义分类</div><div class="si-sub">创建、编辑、删除卡片分类</div></div></div>
             <div class="si-right">›</div>
           </div>
         </div>
@@ -4640,13 +4673,13 @@ const Review = {
       <div id="review-feedback-slot"></div>
       ${comboHtml}
       <div class="review-area" id="review-area">
-        <div class="review-card-wrapper" id="review-card-wrapper" onclick="Review.flip()">
-          <div class="review-card-face" onclick="Review.flip()" style="background:${frontBg}">
+        <div class="review-card-wrapper" id="review-card-wrapper">
+          <div class="review-card-face" id="review-card-front" style="background:${frontBg}">
             <div class="face-label">问题</div>
             <div class="face-text" id="review-question">${escapeHtml(card.question)}</div>
             <div class="face-hint" id="review-hint-front">点击翻开查看答案</div>
           </div>
-          <div class="review-card-face review-card-back" onclick="Review.flip()" style="background:${backBg}">
+          <div class="review-card-face review-card-back" id="review-card-back" style="background:${backBg}">
             <div class="face-label">答案</div>
             <div class="face-text" id="review-answer">${escapeHtml(card.answer)}</div>
             <div class="face-hint" id="review-hint-back">点击翻回</div>
@@ -4658,9 +4691,21 @@ const Review = {
         <button class="review-btn btn-correct" id="btn-knew" disabled><span class="btn-icon">✅</span> 知道</button>
       </div>`;
 
-    // Bind events
-    const area = $('#review-area');
+    // Bind events — card flip (click/touch for mobile, with debounce)
+    const cardFront = $('#review-card-front');
+    const cardBack = $('#review-card-back');
+    let _flipLock = 0;
+    const flipHandler = (e) => {
+      e.stopPropagation();
+      const now = Date.now();
+      if (now - _flipLock < 400) return; // debounce: prevent touch+click double-fire
+      _flipLock = now;
+      Review.flip();
+    };
+    if (cardFront) { cardFront.addEventListener('click', flipHandler); cardFront.addEventListener('touchstart', flipHandler, {passive: true}); }
+    if (cardBack) { cardBack.addEventListener('click', flipHandler); cardBack.addEventListener('touchstart', flipHandler, {passive: true}); }
 
+    // Bind events — answer buttons
     const btnKnew = $('#btn-knew');
     const btnDidnt = $('#btn-didnt-know');
     btnKnew.addEventListener('click', (e) => { e.stopPropagation(); this.submitAnswer('knew'); });
@@ -4845,30 +4890,50 @@ const Stats = {
    Settings Module
    ═══════════════════════════════════════════════════════ */
 const Settings = {
+  _apiUrlVisible: false,
+
   init() {
     $('#settings-user').textContent = `当前用户: ${Auth.getUser() || '未知'}`;
     this._renderAPIUrl();
 
     $('#btn-edit-api').addEventListener('click', () => this._editAPIUrl());
+    $('#settings-api-toggle').addEventListener('click', (e) => { e.stopPropagation(); this._toggleAPIUrl(); });
     $('#btn-reset-api').addEventListener('click', () => this._resetAPIUrl());
     $('#btn-import').addEventListener('click', () => this.importCSV());
     $('#btn-export').addEventListener('click', () => this.exportCSV());
     $('#btn-logout').addEventListener('click', () => {
       if (confirm('确定要退出登录吗？')) Auth.logout();
     });
+    $('#btn-manage-categories').addEventListener('click', () => this.showCategoryManager());
   },
 
   _renderAPIUrl() {
     const el = $('#settings-api-url');
-    if (el) el.textContent = Config.API_BASE.replace('/api', '');
+    if (!el) return;
+    if (this._apiUrlVisible) {
+      const url = Config.API_BASE.replace('/api', '');
+      el.textContent = url;
+      $('#settings-api-toggle').textContent = '🙈';
+      $('#btn-reset-api').style.display = '';
+    } else {
+      el.textContent = '已配置 · 点击 👁️ 查看';
+      $('#settings-api-toggle').textContent = '👁️';
+      $('#btn-reset-api').style.display = 'none';
+    }
+  },
+
+  _toggleAPIUrl() {
+    this._apiUrlVisible = !this._apiUrlVisible;
+    this._renderAPIUrl();
   },
 
   _editAPIUrl() {
+    this._apiUrlVisible = true;
+    this._renderAPIUrl();
     const current = Config.API_BASE.replace('/api', '');
     const input = prompt('输入后端 API 地址（不含 /api）:\n例如: https://xxx.natfrp.com 或 http://192.168.1.100:8000', current);
-    if (input === null) return;
+    if (input === null) { this._apiUrlVisible = false; this._renderAPIUrl(); return; }
     if (!input.trim()) { Toast.error('地址不能为空'); return; }
-    // Basic validation
     try {
       const url = new URL(input.trim());
       if (!url.protocol.startsWith('http')) { Toast.error('请输入 http:// 或 https:// 地址'); return; }
@@ -4877,6 +4942,7 @@ const Settings = {
       return;
     }
     Config.setAPIBase(input.trim());
+    this._apiUrlVisible = false;
     this._renderAPIUrl();
     Toast.success('API 地址已更新，即将刷新...');
     setTimeout(() => location.reload(), 800);
@@ -4886,6 +4952,106 @@ const Settings = {
     Config.resetAPIBase();
     Toast.success('已重置为默认地址，即将刷新...');
     setTimeout(() => location.reload(), 800);
+  },
+
+  // ─── Category Manager ───
+  async showCategoryManager() {
+    try {
+      const categories = await API.get('/categories/');
+      this._renderCategoryModal(categories);
+    } catch (e) {
+      Toast.error('加载分类失败: ' + e.message);
+    }
+  },
+
+  _renderCategoryModal(categories) {
+    const listHtml = categories.length === 0
+      ? '<div style="text-align:center;padding:30px 0;color:var(--text-secondary)">暂无分类，创建一个吧</div>'
+      : categories.map(c => `
+        <div class="category-manager-item" data-id="${c.id}">
+          <span class="category-manager-name">${escapeHtml(c.name)}</span>
+          <span class="category-manager-count">${c.card_count || 0} 张卡片</span>
+          <div class="category-manager-actions">
+            <button class="cat-btn cat-edit" data-id="${c.id}" data-name="${escapeHtml(c.name)}">✏️</button>
+            <button class="cat-btn cat-delete" data-id="${c.id}">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+
+    Modal.open(`
+      <div class="modal-handle"></div>
+      <div class="modal-title">分类管理</div>
+      <div class="modal-form">
+        <div class="form-group" style="display:flex;gap:8px">
+          <input type="text" id="cat-new-name" placeholder="新分类名称" style="flex:1;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;outline:none">
+          <button class="btn-modal primary" id="cat-add-btn" style="white-space:nowrap">添加</button>
+        </div>
+        <div style="max-height:300px;overflow-y:auto;margin-top:12px" id="cat-list">
+          ${listHtml}
+        </div>
+        <div class="modal-actions" style="margin-top:16px">
+          <button class="btn-modal secondary" onclick="Modal.close()">关闭</button>
+        </div>
+      </div>
+    `);
+
+    // Bind add
+    $('#cat-add-btn').addEventListener('click', () => this._addCategory());
+    $('#cat-new-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') this._addCategory(); });
+
+    // Bind edit/delete
+    $$('.cat-edit').forEach(btn => {
+      btn.addEventListener('click', () => this._editCategory(parseInt(btn.dataset.id), btn.dataset.name));
+    });
+    $$('.cat-delete').forEach(btn => {
+      btn.addEventListener('click', () => this._deleteCategory(parseInt(btn.dataset.id)));
+    });
+  },
+
+  async _addCategory() {
+    const input = $('#cat-new-name');
+    const name = (input.value || '').trim();
+    if (!name) { Toast.error('请输入分类名称'); return; }
+    try {
+      await API.post('/categories/', { name });
+      input.value = '';
+      Toast.success('分类添加成功');
+      // Refresh the list
+      const categories = await API.get('/categories/');
+      this._renderCategoryModal(categories);
+      // Also refresh cards page if visible
+      if (Router.current === 'cards') App.cards.load();
+    } catch (e) {
+      Toast.error('添加失败: ' + e.message);
+    }
+  },
+
+  async _editCategory(id, currentName) {
+    const newName = prompt('输入新的分类名称:', currentName);
+    if (newName === null) return;
+    if (!newName.trim()) { Toast.error('分类名称不能为空'); return; }
+    try {
+      await API.patch(`/categories/${id}/`, { name: newName.trim() });
+      Toast.success('分类已重命名');
+      const categories = await API.get('/categories/');
+      this._renderCategoryModal(categories);
+      if (Router.current === 'cards') App.cards.load();
+    } catch (e) {
+      Toast.error('重命名失败: ' + e.message);
+    }
+  },
+
+  async _deleteCategory(id) {
+    if (!confirm('确定要删除此分类吗？\n（卡片不会被删除，仅取消分类关联）')) return;
+    try {
+      await API.del(`/categories/${id}/`);
+      Toast.success('分类已删除');
+      const categories = await API.get('/categories/');
+      this._renderCategoryModal(categories);
+      if (Router.current === 'cards') App.cards.load();
+    } catch (e) {
+      Toast.error('删除失败: ' + e.message);
+    }
   },
 
   importCSV() {
